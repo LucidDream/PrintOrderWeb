@@ -1,0 +1,69 @@
+{% extends "base_with_sidebar.html" %}
+{% block title %}Confirmation - Step 4{% endblock %}
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2 class="mb-3">Step 4 · Confirmation</h2>
+
+        {% if order.result.status == "simulated" %}
+        <div class="alert alert-info">
+            <strong>Simulated Mode:</strong> Order processed in simulation mode. Enable API mode for real blockchain submission.
+        </div>
+        {% elif order.result.transaction_success %}
+        <div class="alert alert-success">
+            <strong>Submission received:</strong> Order was handed to the blockchain. Finalization will update balances automatically.
+        </div>
+        {% else %}
+        <div class="alert alert-warning">
+            <strong>Submission error:</strong> We could not confirm submission. Please review and try again.
+        </div>
+        {% endif %}
+
+        <div class="card shadow-sm mb-3">
+            <div class="card-header">Job Details</div>
+            <div class="card-body">
+                <p class="mb-1"><strong>Job ID:</strong> {{ order.result.job_id }}</p>
+                {% if order.result.job_handle %}
+                <p class="mb-1"><strong>Job Handle:</strong> {{ order.result.job_handle }}</p>
+                {% endif %}
+                <p class="mb-1"><strong>Status:</strong>
+                    <span class="badge
+                        {% if order.result.status == 'completed' %}bg-success
+                        {% elif order.result.status == 'simulated' %}bg-info
+                        {% else %}bg-warning{% endif %}">
+                        {{ order.result.status }}
+                    </span>
+                </p>
+                <p class="mb-1"><strong>Submitted:</strong> {{ order.result.submitted_at }}</p>
+                <p class="mb-0"><strong>Estimated cost:</strong> ${{ "%.2f"|format(order.result.estimated_cost) }}</p>
+            </div>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-header">
+                Submission Status
+            </div>
+            <div class="card-body">
+                <p class="mb-2">This transaction has been submitted for blockchain processing - there is no need to bother the user with this as it will reflect in the consumable balances soon!</p>
+                <p class="text-muted small mb-1">We intentionally hide ledger details to keep the experience free of blockchain noise.</p>
+                <p class="text-muted small mb-0">A background status poller is running temporarily to pull in final ledger data once CL starts returning real expenditures.</p>
+            </div>
+        </div>
+        <form method="post" action="{{ url_for('start_over') }}" class="mt-4">
+            <button type="submit" class="btn btn-primary">Start Another Order</button>
+        </form>
+    </div>
+</div>
+
+{% if order.result.notes %}
+<div class="alert alert-secondary mt-3">
+    <strong>Note:</strong> {{ order.result.notes }}
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // 2025-11-21: Sidebar refresh here is intentionally removed; balances update via background polling once the chain settles.
+</script>
+{% endblock %}

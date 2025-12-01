@@ -1,0 +1,415 @@
+{#
+  Authenticated Inventory Sidebar
+
+  Shows printer configuration with ink slot verification status
+  and consumable inventory with blockchain verification badges.
+
+  Required template variables:
+  - printer: Printer configuration dict from printer_config.get_printer_config()
+  - inventory: Inventory dict with toner_balances and media_options
+  - _: Translation function from i18n module
+#}
+
+<div class="col-lg-3 col-xl-3 p-0" id="live-inventory-sidebar">
+    <!-- Sidebar Header -->
+    <div class="sidebar-header p-3">
+        <h6 class="mb-2" style="font-weight: 700;">
+            🖨️ {{ _('sidebar.header') }}
+        </h6>
+        <small class="text-muted d-block">
+            {{ _('printer.last_updated') }}: <span id="last-update">{{ _('printer.just_now') }}</span>
+        </small>
+    </div>
+
+    <!-- Printer Configuration -->
+    <div class="p-3">
+        <div class="printer-config">
+            <div class="printer-model">{{ printer.model_name }}</div>
+            <div class="printer-details">
+                {{ printer.description }}<br>
+                {{ printer.ink_set_name }}<br>
+                {{ _('common.app_name') }}: {{ printer.model_code }}
+            </div>
+
+            <!-- Ink Slots -->
+            <div class="ink-slots-grid">
+                {% for slot in printer.slots %}
+                <div class="ink-slot {% if slot.verified %}verified{% else %}unverified{% endif %}">
+                    <div class="slot-number">{{ _('printer.slot', number=slot.slot_number) }}</div>
+                    <div class="slot-color" style="color: {{ slot.color_hex }};">
+                        {{ _('colors.' + slot.color_name) }}
+                    </div>
+                    <div class="slot-status">
+                        {% if slot.verified %}
+                        <span class="verified-badge">
+                            <span class="blockchain-indicator"></span>
+                            {{ _('common.verified') }}
+                        </span>
+                        {% else %}
+                        <span class="unverified-badge">
+                            ⚠️ {{ _('common.unverified') }}
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Counterfeit Alert (if unverified cartridges exist) -->
+        {% if printer.unverified_count > 0 %}
+        <div class="counterfeit-alert">
+            <div class="counterfeit-alert-title">{{ _('alert.counterfeit_title') }}</div>
+            <p class="counterfeit-alert-text">
+                {{ _('alert.counterfeit_message', unverified=printer.unverified_count, total=printer.total_slots) }}
+            </p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- VERIFIED INKS SECTION -->
+    <div class="p-3 border-top">
+        <div class="section-header">✅ {{ _('sidebar.verified_consumables') }}</div>
+
+        {% if inventory.api_unavailable %}
+        <div class="alert alert-warning mt-2 mb-2" role="alert">
+            <strong>⚠️ API Unavailable</strong><br>
+            {{ inventory.error or "Unable to connect to inventory system. No consumable data available." }}
+        </div>
+        {% elif printer.verified_count == 0 %}
+        <div class="alert alert-info mt-2 mb-2" role="alert">
+            <strong>ℹ️ No Verified Consumables</strong><br>
+            No blockchain-verified consumables detected in the current API data.
+        </div>
+        {% endif %}
+
+        {% for slot in printer.slots %}
+        {% if slot.verified and slot.account_id and slot.account_id in inventory.toner_balances %}
+        {% set toner = inventory.toner_balances[slot.account_id] %}
+        <div class="consumable-card" data-status="verified">
+            <div style="position: relative;">
+                {% set ns = namespace(image_url=None) %}
+                {% if slot.account_id in toner_details and toner_details[slot.account_id] %}
+                    {% for field in toner_details[slot.account_id] %}
+                        {% if field['key'] == 'product_image_url' %}
+                            {% set ns.image_url = field['value'] %}
+                        {% endif %}
+                    {% endfor %}
+                {% endif %}
+                <img src="{{ ns.image_url if ns.image_url else default_images.toner }}"
+                     alt="{{ _('colors.' + slot.color_name) }}">
+                <span class="badge bg-success status-badge">✓ {{ _('common.verified') }}</span>
+            </div>
+            <div class="p-2">
+                <div class="card-name text-truncate">{{ toner.display }}</div>
+                <div class="card-field">
+                    <span class="field-icon">📦</span>
+                    <strong>{{ "%.2f"|format(toner.available) }}</strong> mL
+                </div>
+                {% if slot.account_id in toner_details and toner_details[slot.account_id] %}
+                    {% for field in toner_details[slot.account_id] %}
+                        {% if field['key'] == 'total_cost' %}
+                <div class="card-field total-cost">
+                    <span class="field-icon">💰</span>
+                    {{ field['value'] }}
+                </div>
+                        {% endif %}
+                    {% endfor %}
+                {% endif %}
+            </div>
+            <div class="verification-status verified">
+                <span style="font-weight: 700;">⛓️ {{ _('consumable.blockchain_verified') }}</span>
+                <small style="margin-left: auto;">{{ _('consumable.slot_assignment', number=slot.slot_number) }}</small>
+            </div>
+            {% if slot.account_id in toner_details and toner_details[slot.account_id] %}
+            <div class="border-top">
+                <button class="btn btn-sm btn-link w-100 text-decoration-none"
+                        data-bs-toggle="collapse"
+                        data-bs-target="#details-{{ slot.color_name }}">
+                    ℹ️ {{ _('common.show_details') }}
+                </button>
+            </div>
+            <div class="collapse" id="details-{{ slot.color_name }}">
+                <div class="p-2 border-top bg-light details-content">
+                    {% for field in toner_details[slot.account_id] %}
+                    <div class="mb-1">
+                        <strong>{{ _(field['label']) }}:</strong>
+                        {% if field['format_type'] == 'badge' %}
+                        <span class="badge bg-info">{{ field['value'] }}</span>
+                        {% else %}
+                        {{ field['value'] }}
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+        {% endfor %}
+    </div>
+
+    <!-- UNVERIFIED INKS SECTION -->
+    {% if printer.unverified_count > 0 %}
+    <div class="p-3 border-top">
+        <div class="section-header" style="color: #856404;">⚠️ {{ _('sidebar.unverified_consumables') }}</div>
+
+        {% for slot in printer.slots %}
+        {% if not slot.verified %}
+        <div class="consumable-card" data-status="unverified">
+            <div style="position: relative;">
+                <div class="ink-color-block" style="background-color: {{ slot.color_hex }}33;">
+                    <span class="ink-color-name">{{ _('colors.' + slot.color_name) }}</span>
+                </div>
+                <span class="badge bg-warning status-badge">⚠️ {{ _('common.unverified') }}</span>
+            </div>
+            <div class="p-2">
+                <div class="card-name text-truncate">{{ _('common.unknown') }} {{ _('colors.' + slot.color_name) }} Cartridge</div>
+                <div class="card-field">
+                    <span class="field-icon">📦</span>
+                    <strong>{{ _('common.unknown') }}</strong> {{ _('consumable.unknown_capacity') }}
+                </div>
+                <div class="card-field" style="color: #856404;">
+                    <span class="field-icon">⚠️</span>
+                    {{ _('consumable.not_verified') }}
+                </div>
+            </div>
+            <div class="verification-status unverified">
+                <span style="font-weight: 700;">⚠️ {{ _('consumable.no_blockchain_record') }}</span>
+                <small style="margin-left: auto;">{{ _('consumable.slot_assignment', number=slot.slot_number) }}</small>
+            </div>
+        </div>
+        {% endif %}
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- MEDIA SECTION -->
+    <div class="p-3 border-top">
+        <div class="section-header">📄 {{ _('sidebar.media') }}</div>
+
+        {% if inventory.api_unavailable %}
+        <div class="alert alert-warning mt-2 mb-2" role="alert">
+            <strong>⚠️ API Unavailable</strong><br>
+            No media data available from API.
+        </div>
+        {% elif not inventory.media_options %}
+        <div class="alert alert-info mt-2 mb-2" role="alert">
+            <strong>ℹ️ No Media Available</strong><br>
+            No media consumables detected in the current API data.
+        </div>
+        {% endif %}
+
+        {% for media_id, media in inventory.media_options.items() %}
+        <div class="consumable-card" data-status="verified">
+            <div style="position: relative;">
+                {% set ns = namespace(image_url=None) %}
+                {% if media_id in media_details and media_details[media_id] %}
+                    {% for field in media_details[media_id] %}
+                        {% if field['key'] == 'product_image_url' %}
+                            {% set ns.image_url = field['value'] %}
+                        {% endif %}
+                    {% endfor %}
+                {% endif %}
+                <img src="{{ ns.image_url if ns.image_url else default_images.media }}"
+                     alt="{{ media.display }}">
+                <span class="badge bg-success status-badge">✓ {{ _('common.verified') }}</span>
+            </div>
+            <div class="p-2">
+                <div class="card-name text-truncate">{{ media.display }}</div>
+                <div class="card-field">
+                    <span class="field-icon">📦</span>
+                    <strong>{{ media.available }}</strong> sheets
+                </div>
+                {% if media_id in media_details and media_details[media_id] %}
+                    {% for field in media_details[media_id] %}
+                        {% if field['key'] == 'total_cost' %}
+                <div class="card-field total-cost">
+                    <span class="field-icon">💰</span>
+                    {{ field['value'] }}
+                </div>
+                        {% endif %}
+                    {% endfor %}
+                {% endif %}
+            </div>
+            <div class="verification-status verified">
+                <span style="font-weight: 700;">⛓️ {{ _('consumable.blockchain_verified') }}</span>
+            </div>
+            {% if media_id in media_details and media_details[media_id] %}
+            <div class="border-top">
+                <button class="btn btn-sm btn-link w-100 text-decoration-none"
+                        data-bs-toggle="collapse"
+                        data-bs-target="#details-media-{{ loop.index }}">
+                    ℹ️ {{ _('common.show_details') }}
+                </button>
+            </div>
+            <div class="collapse" id="details-media-{{ loop.index }}">
+                <div class="p-2 border-top bg-light details-content">
+                    {% for field in media_details[media_id] %}
+                    <div class="mb-1">
+                        <strong>{{ _(field['label']) }}:</strong>
+                        {% if field['format_type'] == 'badge' %}
+                        <span class="badge bg-info">{{ field['value'] }}</span>
+                        {% else %}
+                        {{ field['value'] }}
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- UNATTACHED CONSUMABLES SECTION -->
+    {% if unattached_consumables and unattached_consumables|length > 0 %}
+    <div class="p-3 border-top">
+        <div class="section-header" style="color: #6c757d;">🔌 Unattached Consumables</div>
+        <div class="alert alert-info mt-2 mb-2" role="alert" style="font-size: 0.85rem;">
+            <strong>ℹ️ Not Installed</strong><br>
+            These consumables are in inventory but not installed in any printer slot.
+        </div>
+
+        {% for consumable in unattached_consumables %}
+        <div class="consumable-card" data-status="unattached" style="opacity: 0.85; border-left: 3px solid #6c757d;">
+            <div style="position: relative;">
+                {% if consumable.type == 'toner' %}
+                <img src="{{ consumable.image_url if consumable.image_url else default_images.toner }}"
+                     alt="{{ consumable.display_name }}">
+                {% elif consumable.type == 'media' %}
+                <img src="{{ consumable.image_url if consumable.image_url else default_images.media }}"
+                     alt="{{ consumable.display_name }}">
+                {% endif %}
+                <span class="badge bg-secondary status-badge">🔌 Unattached</span>
+            </div>
+            <div class="p-2">
+                <div class="card-name text-truncate">{{ consumable.display_name }}</div>
+                <div class="card-field">
+                    <span class="field-icon">📦</span>
+                    <strong>{{ "%.2f"|format(consumable.balance) }}</strong> {{ consumable.uom }}
+                </div>
+                <div class="card-field text-muted">
+                    <span class="field-icon">⚠️</span>
+                    Not assigned to any slot
+                </div>
+            </div>
+            <div class="verification-status verified">
+                <span style="font-weight: 700;">⛓️ {{ _('consumable.blockchain_verified') }}</span>
+                <small style="margin-left: auto; color: #6c757d;">No slot assigned</small>
+            </div>
+            {% if consumable.id in toner_details and toner_details[consumable.id] %}
+            <div class="border-top">
+                <button class="btn btn-sm btn-link w-100 text-decoration-none"
+                        data-bs-toggle="collapse"
+                        data-bs-target="#details-unattached-{{ loop.index }}">
+                    ℹ️ {{ _('common.show_details') }}
+                </button>
+            </div>
+            <div class="collapse" id="details-unattached-{{ loop.index }}">
+                <div class="p-2 border-top bg-light details-content">
+                    {% for field in toner_details[consumable.id] %}
+                    <div class="mb-1">
+                        <strong>{{ _(field['label']) }}:</strong>
+                        {% if field['format_type'] == 'badge' %}
+                        <span class="badge bg-info">{{ field['value'] }}</span>
+                        {% else %}
+                        {{ field['value'] }}
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+
+<!-- Auto-refresh script - only include if not already loaded -->
+{% if not request.path.startswith('/api/sidebar_refresh') %}
+<script>
+// Auto-update timestamp and sidebar data
+if (typeof window.sidebarUpdateTime === 'undefined') {
+    window.sidebarUpdateTime = Date.now();
+    window.REFRESH_INTERVAL_MS = 30000;  // 30 seconds
+
+    window.updateLastUpdate = function() {
+        const seconds = Math.floor((Date.now() - window.sidebarUpdateTime) / 1000);
+        const elem = document.getElementById('last-update');
+
+        if (!elem) return;
+
+        if (seconds < 5) {
+            elem.textContent = '{{ _('printer.just_now') }}';
+        } else if (seconds < 60) {
+            elem.textContent = '{{ _('printer.seconds_ago', seconds='') }}'.replace('s ago', seconds + 's ago');
+        } else {
+            const minutes = Math.floor(seconds / 60);
+            elem.textContent = '{{ _('printer.minutes_ago', minutes='') }}'.replace('m ago', minutes + 'm ago');
+        }
+    };
+
+    window.refreshSidebarData = function() {
+        console.log('Starting sidebar refresh...');
+        // Fetch fresh sidebar HTML from server
+        fetch('/api/sidebar_refresh')
+            .then(response => {
+                console.log('Fetch response received, status:', response.status);
+                if (!response.ok) {
+                    throw new Error('Sidebar refresh failed with status: ' + response.status);
+                }
+                return response.text();
+            })
+            .then(html => {
+                console.log('HTML received, length:', html.length);
+                // Find the sidebar element
+                const sidebar = document.getElementById('live-inventory-sidebar');
+                if (!sidebar) {
+                    console.error('Sidebar element not found!');
+                    return;
+                }
+                console.log('Found sidebar element');
+
+                // Create temporary div to parse HTML
+                const temp = document.createElement('div');
+                temp.innerHTML = html;
+                const newContent = temp.querySelector('#live-inventory-sidebar');
+
+                if (!newContent) {
+                    console.error('Could not find #live-inventory-sidebar in response HTML');
+                    console.log('Response HTML preview:', html.substring(0, 500));
+                    return;
+                }
+
+                console.log('Replacing sidebar content...');
+                // Replace only the inner content
+                sidebar.innerHTML = newContent.innerHTML;
+
+                // Reset update timestamp
+                window.sidebarUpdateTime = Date.now();
+                console.log('✓ Sidebar refreshed successfully at', new Date().toLocaleTimeString());
+            })
+            .catch(error => {
+                console.error('❌ Failed to refresh sidebar:', error);
+            });
+    };
+
+    // Update timestamp every second
+    setInterval(window.updateLastUpdate, 1000);
+
+    // Refresh sidebar data every 30 seconds
+    setInterval(window.refreshSidebarData, window.REFRESH_INTERVAL_MS);
+
+    // Also refresh when page becomes visible again
+    document.addEventListener('visibilitychange', function() {
+        if (!document.hidden) {
+            window.refreshSidebarData();
+        }
+    });
+
+    console.log('Sidebar auto-refresh initialized');
+}
+</script>
+{% endif %}

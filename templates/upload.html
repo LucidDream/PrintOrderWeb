@@ -1,0 +1,40 @@
+{% extends "base_with_sidebar.html" %}
+{% block title %}Upload PDF - Step 1{% endblock %}
+{% block content %}
+<div class="row">
+    <div class="col-lg-7">
+        <h2 class="mb-3">Step 1 · Upload your PDF</h2>
+        <form method="post" enctype="multipart/form-data" class="card card-body shadow-sm">
+            <div class="mb-3">
+                <label class="form-label" for="job_name">Job name</label>
+                <input type="text" class="form-control" id="job_name" name="job_name"
+                       value="{{ order.get('job_name') if order else '' }}" required>
+            </div>
+            <div class="mb-3">
+                <label class="form-label" for="pdf">PDF file</label>
+                <input type="file" class="form-control" id="pdf" name="pdf" accept="application/pdf" required>
+                <div class="form-text">Maximum size: 16 MB.</div>
+            </div>
+            <button type="submit" class="btn btn-primary">Analyze PDF</button>
+        </form>
+    </div>
+    {% if order and order.get('analysis') %}
+    <div class="col-lg-5 mt-4 mt-lg-0">
+        <h2 class="mb-3">Last analysis</h2>
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <p class="mb-1"><strong>File:</strong> {{ order.get('original_filename') }}</p>
+                <p class="mb-1"><strong>Pages:</strong> {{ order.analysis.pages }}</p>
+                <p class="mb-1"><strong>Size:</strong> {{ order.analysis.size_kb }} KB</p>
+                <p class="mb-1"><strong>Suggested color:</strong> {{ order.analysis.recommended_color_mode|replace('_', ' ') }}</p>
+                {% if order.analysis.error %}
+                <div class="alert alert-warning mt-3">
+                    {{ order.analysis.error }}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

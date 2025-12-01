@@ -1,0 +1,193 @@
+{
+  "common": {
+    "app_name": "SmartSupplySystem",
+    "welcome": "Willkommen",
+    "loading": "Laden...",
+    "refresh": "Aktualisieren",
+    "show_details": "Details anzeigen",
+    "hide_details": "Details ausblenden",
+    "submit": "Absenden",
+    "cancel": "Abbrechen",
+    "back": "Zurück",
+    "next": "Weiter",
+    "save": "Speichern",
+    "close": "Schließen",
+    "verified": "VERIFIZIERT",
+    "unverified": "NICHT VERIFIZIERT",
+    "available": "Verfügbar",
+    "empty": "Leer",
+    "unknown": "Unbekannt",
+    "job_name": "Auftragsname",
+    "job_name_help": "Geben Sie einen Namen ein, um diesen Druckauftrag zu identifizieren"
+  },
+
+  "nav": {
+    "brand": "SmartSupplySystem",
+    "subtitle": "Blockchain-Authentifizierung",
+    "upload": "Hochladen",
+    "details": "Details",
+    "review": "Überprüfen",
+    "confirmation": "Bestätigung"
+  },
+
+  "printer": {
+    "active_config": "Aktive Druckerkonfiguration",
+    "last_updated": "Zuletzt aktualisiert",
+    "just_now": "Gerade eben",
+    "seconds_ago": "vor {seconds}s",
+    "minutes_ago": "vor {minutes}m",
+    "slot": "SLOT {number}",
+    "total_slots": "{count} Slots"
+  },
+
+  "colors": {
+    "cyan": "Cyan",
+    "magenta": "Magenta",
+    "yellow": "Gelb",
+    "black": "Schwarz",
+    "light_cyan": "Hellcyan",
+    "light_magenta": "Hellmagenta",
+    "light_black": "Hellschwarz",
+    "orange": "Orange",
+    "green": "Grün"
+  },
+
+  "sidebar": {
+    "header": "Aktive Druckerkonfiguration",
+    "verified_consumables": "Verifizierte Verbrauchsmaterialien",
+    "unverified_consumables": "Nicht verifizierte Verbrauchsmaterialien",
+    "media": "Medien",
+    "refresh_now": "Jetzt aktualisieren"
+  },
+
+  "alert": {
+    "counterfeit_title": "Fälschungserkennung Warnung",
+    "counterfeit_message": "{unverified} von {total} Tintenpatronen sind nicht blockchain-verifiziert. Dies können gefälschte oder nachgefüllte Patronen sein, die Ihren Drucker beschädigen oder schlechte Druckqualität erzeugen könnten.",
+    "smart_routing": "Intelligentes Job-Routing:",
+    "smart_routing_message": "Aufträge verwenden nur verifizierte Verbrauchsmaterialien, um Ausgabequalität und Garantiekonformität zu gewährleisten. Nicht verifizierte Tinten werden von der Auftragsplanung ausgeschlossen."
+  },
+
+  "consumable": {
+    "balance": "{amount} {unit}",
+    "total_cost": "Gesamtkosten",
+    "base_price": "Basispreis",
+    "tax_rate": "Steuersatz",
+    "purchase_date": "Kaufdatum",
+    "page_yield": "{pages} Seiten Reichweite",
+    "page_yield_detail": "Seitenreichweite",
+    "unknown_capacity": "Unbekannte Kapazität",
+    "not_verified": "Nicht blockchain-verifiziert",
+    "blockchain_verified": "Blockchain-verifiziert",
+    "no_blockchain_record": "Kein Blockchain-Datensatz",
+    "slot_assignment": "Slot {number}",
+    "manufacturer": "Hersteller",
+    "serial_number": "Seriennummer",
+    "lot_number": "Chargennummer",
+    "manufacturing_date": "Herstellungsdatum",
+    "blockchain_tx": "Blockchain TX",
+    "authentication": "Authentifizierung",
+    "oem_genuine": "OEM Original",
+    "size": "Größe",
+    "color": "Farbe",
+    "media_type": "Medientyp",
+    "unit_measure": "Maßeinheit",
+    "ink_type": "Tintentyp",
+    "part_number": "Teilenummer",
+    "dimensions": "Abmessungen",
+    "weight": "Gewicht",
+    "brightness": "Helligkeit",
+    "opacity": "Deckkraft",
+    "chemistry_base": "Chemiebasis",
+    "pigment_family": "Pigmentfamilie",
+    "viscosity": "Viskosität",
+    "surface_tension": "Oberflächenspannung",
+    "density": "Dichte",
+    "ph": "pH-Wert",
+    "conductivity": "Leitfähigkeit",
+    "particle_size_d50": "Partikelgröße D50",
+    "particle_size_d90": "Partikelgröße D90",
+    "zeta_potential": "Zetapotential",
+    "shelf_life": "Haltbarkeit",
+    "storage_temp": "Lagertemperatur",
+    "ink_temp": "Empfohlene Tintentemperatur",
+    "sku": "Artikelnummer",
+    "safety_data_sheet": "Sicherheitsdatenblatt",
+    "icc_profile": "ICC-Profil",
+    "coating_type": "Beschichtungstyp",
+    "substrate_family": "Substratfamilie",
+    "thickness": "Dicke",
+    "cie_whiteness": "CIE-Weißgrad",
+    "surface_energy": "Oberflächenenergie",
+    "surface_roughness": "Oberflächenrauheit",
+    "heat_tolerance": "Hitzebeständigkeit",
+    "moisture_content": "Feuchtigkeitsgehalt"
+  },
+
+  "demo": {
+    "title": "SmartSupplySystem Tinten-Authentifizierung Demo",
+    "subtitle": "Schützen Sie Ihr Unternehmen vor gefälschten Verbrauchsmaterialien.",
+    "description": "Diese Demo zeigt, wie Blockchain-Technologie echte OEM-Tintenpatronen in Echtzeit authentifizieren kann. Der {printer} auf der linken Seite hat {verified} verifizierte Original-Tinten und {unverified} nicht verifizierte Patronen, die Fälschungen, Nachfüllungen oder abgelaufener Bestand sein könnten."
+  },
+
+  "benefits": {
+    "verified_title": "Verifizierte Tinten",
+    "verified_items": [
+      "Blockchain-registrierte Seriennummern",
+      "Garantiert OEM-Originalteile",
+      "Voller Garantieschutz",
+      "Nachverfolgbar von Herstellung bis Installation",
+      "Bekannte Kapazitäts- und Reichweiten-Spezifikationen"
+    ],
+    "unverified_title": "Nicht verifizierte Tinten",
+    "unverified_items": [
+      "Keine Blockchain-Registrierung gefunden",
+      "Potenzielle Fälschungen oder nachgefüllte Patronen",
+      "Kann Druckergarantie ungültig machen",
+      "Unbekannte Tintenqualität oder Zusammensetzung",
+      "Risiko von Druckerschäden oder schlechter Ausgabe"
+    ]
+  },
+
+  "job_form": {
+    "title": "Druckauftrag einreichen",
+    "upload_label": "PDF-Datei hochladen",
+    "analyze_button": "Analysieren & Kosten schätzen",
+    "quantity_label": "Anzahl der Kopien",
+    "quality_label": "Druckqualität",
+    "quality_standard": "Standardqualität",
+    "quality_draft": "Entwurfsqualität",
+    "quality_high": "Hohe Qualität",
+    "submit_button": "Analysieren & Kosten schätzen"
+  },
+
+  "features": {
+    "title": "Wichtige Anti-Fälschungs-Funktionen",
+    "blockchain_registry": {
+      "title": "Blockchain-Register",
+      "description": "Jede echte OEM-Patrone wird zum Zeitpunkt der Herstellung im unveränderlichen Ledger registriert"
+    },
+    "realtime_verification": {
+      "title": "Echtzeit-Verifizierung",
+      "description": "Sofortige Authentifizierung bei Installation der Patrone - keine manuellen Prüfungen erforderlich"
+    },
+    "warranty_protection": {
+      "title": "Garantieschutz",
+      "description": "Verifizierte Tinten behalten vollen Garantieschutz und Qualitätsgarantien"
+    }
+  },
+
+  "error": {
+    "file_required": "Bitte wählen Sie eine PDF-Datei aus",
+    "file_invalid": "Ungültiger Dateityp. Bitte laden Sie eine PDF-Datei hoch.",
+    "quantity_invalid": "Menge muss zwischen 1 und 1000 liegen",
+    "api_error": "API-Verbindungsfehler. Bitte versuchen Sie es erneut.",
+    "session_expired": "Ihre Sitzung ist abgelaufen. Bitte beginnen Sie von vorne.",
+    "insufficient_balance": "Unzureichender Bestand, um diesen Auftrag abzuschließen. Bitte füllen Sie Verbrauchsmaterialien auf."
+  },
+
+  "success": {
+    "job_submitted": "Auftrag erfolgreich eingereicht!",
+    "job_completed": "Auftrag erfolgreich abgeschlossen!",
+    "inventory_refreshed": "Bestand erfolgreich aktualisiert"
+  }
+}

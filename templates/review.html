@@ -1,0 +1,70 @@
+{% extends "base_with_sidebar.html" %}
+{% block title %}Review - Step 3{% endblock %}
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2 class="mb-3">Step 3 · Review and confirm</h2>
+        <div class="card mb-3 shadow-sm">
+            <div class="card-header">Summary</div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-4">Job name</dt>
+                    <dd class="col-sm-8">{{ order.job_name }}</dd>
+                    <dt class="col-sm-4">Quantity</dt>
+                    <dd class="col-sm-8">{{ order.choices.quantity }}</dd>
+                    <dt class="col-sm-4">Color mode</dt>
+                    <dd class="col-sm-8">{{ order.choices.color_mode.replace('_', ' ') }}</dd>
+                    <dt class="col-sm-4">Print quality</dt>
+                    <dd class="col-sm-8">
+                        {{ order.choices.quality.title() }}
+                        {% if order.estimate.quality_modifier %}
+                            <span class="text-muted">({{ "%.0f"|format(order.estimate.quality_modifier * 100) }}% toner usage)</span>
+                        {% endif %}
+                    </dd>
+                    <dt class="col-sm-4">Media</dt>
+                    <dd class="col-sm-8">{{ order.choices.media_display_name or order.choices.media_type }}</dd>
+                    <dt class="col-sm-4">Pages per copy</dt>
+                    <dd class="col-sm-8">{{ order.estimate.pages_per_copy }}</dd>
+                </dl>
+            </div>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-header">Estimated consumables</div>
+            <div class="card-body">
+                <p class="mb-2">Sheets required: <strong>{{ order.estimate.sheets_required }}</strong></p>
+                <p class="mb-2">Estimated cost: <strong>${{ "%.2f"|format(order.estimate.estimated_cost) }}</strong></p>
+
+                <h6 class="mt-3">Toner usage</h6>
+                <ul>
+                    {% for color, amount in order.estimate.toner_usage.items() %}
+                    <li>{{ color.title() }} · {{ amount }} ml</li>
+                    {% endfor %}
+                </ul>
+
+                {% if order.estimate.reasoning %}
+                <div class="alert alert-info mt-3 mb-3">
+                    <h6 class="alert-heading mb-2">Estimation details</h6>
+                    <p class="mb-0 small">{{ order.estimate.reasoning }}</p>
+                </div>
+                {% endif %}
+
+                {% if order.estimate.warnings %}
+                <div class="alert alert-warning">
+                    {% for warning in order.estimate.warnings %}
+                    <div>{{ warning }}</div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="alert alert-success mb-0">Inventory check passed.</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <form method="post" action="{{ url_for('submit') }}" class="mt-4 d-flex justify-content-between">
+            <a href="{{ url_for('details') }}" class="btn btn-outline-secondary">Edit details</a>
+            <button type="submit" class="btn btn-success">Submit Order</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

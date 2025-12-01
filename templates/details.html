@@ -1,0 +1,90 @@
+{% extends "base_with_sidebar.html" %}
+{% block title %}Job Details - Step 2{% endblock %}
+{% block content %}
+{% set choices = order.get('choices', {}) %}
+<div class="row">
+    <div class="col-12">
+        <h2 class="mb-3">Step 2 · Configure the job</h2>
+        <form method="post" class="card card-body shadow-sm">
+            <div class="mb-3">
+                <label class="form-label" for="quantity">Quantity</label>
+                <input type="number" min="1" class="form-control" id="quantity" name="quantity"
+                       value="{{ choices.get('quantity', 100) }}" required>
+            </div>
+            <div class="mb-3">
+                <label class="form-label" for="color_mode">Color mode</label>
+                <select class="form-select" id="color_mode" name="color_mode">
+                    {% for key, profile in inventory.toner_profiles.items() %}
+                        <option value="{{ key }}"
+                                {% if choices.get('color_mode') == key %}
+                                    selected
+                                {% elif not choices and order.analysis.recommended_color_mode == key %}
+                                    selected
+                                {% endif %}
+                        >
+                            {{ key.replace('_', ' ').title() }} ({{ profile|length }} channels)
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="mb-3">
+                <label class="form-label" for="quality">Print quality</label>
+                <select class="form-select" id="quality" name="quality">
+                    <option value="draft" {% if choices.get('quality') == 'draft' %}selected{% endif %}>
+                        Draft (-30% toner, lighter output)
+                    </option>
+                    <option value="standard"
+                            {% if choices.get('quality') == 'standard' %}
+                                selected
+                            {% elif not choices %}
+                                selected
+                            {% endif %}>
+                        Standard (balanced quality)
+                    </option>
+                    <option value="high" {% if choices.get('quality') == 'high' %}selected{% endif %}>
+                        High (+20% toner, richer output)
+                    </option>
+                </select>
+            </div>
+            <div class="mb-3">
+                <label class="form-label" for="media_type">Media</label>
+                <select class="form-select" id="media_type" name="media_type">
+                    {% for key, option in inventory.media_options.items() %}
+                        <option value="{{ key }}"
+                                {% if choices.get('media_type') == key %}
+                                    selected
+                                {% endif %}
+                        >
+                            {{ option.display }} · {{ option.available }} sheets available
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="mb-3">
+                <label class="form-label" for="turnaround_time">Turnaround</label>
+                <select class="form-select" id="turnaround_time" name="turnaround_time">
+                    {% for option in inventory.default_turnaround_options %}
+                        <option value="{{ option }}"
+                                {% if choices.get('turnaround_time') == option %}
+                                    selected
+                                {% elif not choices and option == 'standard' %}
+                                    selected
+                                {% endif %}
+                        >
+                            {{ option.title() }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="mb-3">
+                <label class="form-label" for="notes">Notes (optional)</label>
+                <textarea id="notes" name="notes" class="form-control" rows="3">{{ choices.get('notes', '') }}</textarea>
+            </div>
+            <div class="d-flex justify-content-between align-items-center">
+                <a href="{{ url_for('upload') }}" class="btn btn-outline-secondary">Back</a>
+                <button type="submit" class="btn btn-primary">Generate Estimate</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

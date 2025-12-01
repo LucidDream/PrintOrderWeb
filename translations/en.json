@@ -1,0 +1,193 @@
+{
+  "common": {
+    "app_name": "SmartSupplySystem",
+    "welcome": "Welcome",
+    "loading": "Loading...",
+    "refresh": "Refresh",
+    "show_details": "Show Details",
+    "hide_details": "Hide Details",
+    "submit": "Submit",
+    "cancel": "Cancel",
+    "back": "Back",
+    "next": "Next",
+    "save": "Save",
+    "close": "Close",
+    "verified": "VERIFIED",
+    "unverified": "UNVERIFIED",
+    "available": "Available",
+    "empty": "Empty",
+    "unknown": "Unknown",
+    "job_name": "Job Name",
+    "job_name_help": "Enter a name to identify this print job"
+  },
+
+  "nav": {
+    "brand": "SmartSupplySystem",
+    "subtitle": "Blockchain Authentication",
+    "upload": "Upload",
+    "details": "Details",
+    "review": "Review",
+    "confirmation": "Confirmation"
+  },
+
+  "printer": {
+    "active_config": "Active Printer Configuration",
+    "last_updated": "Last updated",
+    "just_now": "Just now",
+    "seconds_ago": "{seconds}s ago",
+    "minutes_ago": "{minutes}m ago",
+    "slot": "SLOT {number}",
+    "total_slots": "{count} slots"
+  },
+
+  "colors": {
+    "cyan": "Cyan",
+    "magenta": "Magenta",
+    "yellow": "Yellow",
+    "black": "Black",
+    "light_cyan": "Light Cyan",
+    "light_magenta": "Light Magenta",
+    "light_black": "Light Black",
+    "orange": "Orange",
+    "green": "Green"
+  },
+
+  "sidebar": {
+    "header": "Active Printer Configuration",
+    "verified_consumables": "Verified Consumables",
+    "unverified_consumables": "Unverified Consumables",
+    "media": "Media",
+    "refresh_now": "Refresh Now"
+  },
+
+  "alert": {
+    "counterfeit_title": "Counterfeit Detection Alert",
+    "counterfeit_message": "{unverified} of {total} ink cartridges are not blockchain-verified. These may be counterfeit or refilled cartridges that could damage your printer or produce poor quality output.",
+    "smart_routing": "Smart Job Routing:",
+    "smart_routing_message": "Jobs will only use verified consumables to ensure quality output and warranty compliance. Unverified inks are excluded from job planning."
+  },
+
+  "consumable": {
+    "balance": "{amount} {unit}",
+    "total_cost": "Total Cost",
+    "base_price": "Base Price",
+    "tax_rate": "Tax Rate",
+    "purchase_date": "Purchase Date",
+    "page_yield": "{pages} pages yield",
+    "page_yield_detail": "Page Yield",
+    "unknown_capacity": "Unknown capacity",
+    "not_verified": "Not blockchain verified",
+    "blockchain_verified": "Blockchain Verified",
+    "no_blockchain_record": "No Blockchain Record",
+    "slot_assignment": "Slot {number}",
+    "manufacturer": "Manufacturer",
+    "serial_number": "Serial Number",
+    "lot_number": "Lot Number",
+    "manufacturing_date": "Manufacturing Date",
+    "blockchain_tx": "Blockchain TX",
+    "authentication": "Authentication",
+    "oem_genuine": "OEM Genuine",
+    "size": "Size",
+    "color": "Color",
+    "media_type": "Media Type",
+    "unit_measure": "Unit of Measure",
+    "ink_type": "Ink Type",
+    "part_number": "Part Number",
+    "dimensions": "Dimensions",
+    "weight": "Weight",
+    "brightness": "Brightness",
+    "opacity": "Opacity",
+    "chemistry_base": "Chemistry Base",
+    "pigment_family": "Pigment Family",
+    "viscosity": "Viscosity",
+    "surface_tension": "Surface Tension",
+    "density": "Density",
+    "ph": "pH",
+    "conductivity": "Conductivity",
+    "particle_size_d50": "Particle Size D50",
+    "particle_size_d90": "Particle Size D90",
+    "zeta_potential": "Zeta Potential",
+    "shelf_life": "Shelf Life",
+    "storage_temp": "Storage Temperature",
+    "ink_temp": "Recommended Ink Temperature",
+    "sku": "SKU",
+    "safety_data_sheet": "Safety Data Sheet",
+    "icc_profile": "ICC Profile",
+    "coating_type": "Coating Type",
+    "substrate_family": "Substrate Family",
+    "thickness": "Thickness",
+    "cie_whiteness": "CIE Whiteness",
+    "surface_energy": "Surface Energy",
+    "surface_roughness": "Surface Roughness",
+    "heat_tolerance": "Heat Tolerance",
+    "moisture_content": "Moisture Content"
+  },
+
+  "demo": {
+    "title": "SmartSupplySystem Ink Authentication Demo",
+    "subtitle": "Protect your business from counterfeit consumables.",
+    "description": "This demo shows how blockchain technology can authenticate genuine OEM ink cartridges in real-time. The {printer} on the left has {verified} verified genuine inks and {unverified} unverified cartridges that could be counterfeits, refills, or expired stock."
+  },
+
+  "benefits": {
+    "verified_title": "Verified Inks",
+    "verified_items": [
+      "Blockchain-registered serial numbers",
+      "Guaranteed OEM genuine parts",
+      "Full warranty protection",
+      "Tracked from manufacturing to installation",
+      "Known capacity and yield specifications"
+    ],
+    "unverified_title": "Unverified Inks",
+    "unverified_items": [
+      "No blockchain registration found",
+      "Potential counterfeit or refilled cartridges",
+      "May void printer warranty",
+      "Unknown ink quality or composition",
+      "Risk of printer damage or poor output"
+    ]
+  },
+
+  "job_form": {
+    "title": "Submit Print Job",
+    "upload_label": "Upload PDF File",
+    "analyze_button": "Analyze & Estimate Cost",
+    "quantity_label": "Number of Copies",
+    "quality_label": "Print Quality",
+    "quality_standard": "Standard Quality",
+    "quality_draft": "Draft Quality",
+    "quality_high": "High Quality",
+    "submit_button": "Analyze & Estimate Cost"
+  },
+
+  "features": {
+    "title": "Key Anti-Counterfeit Features",
+    "blockchain_registry": {
+      "title": "Blockchain Registry",
+      "description": "Every genuine OEM cartridge registered on immutable ledger at time of manufacture"
+    },
+    "realtime_verification": {
+      "title": "Real-Time Verification",
+      "description": "Instant authentication when cartridge is installed - no manual checks required"
+    },
+    "warranty_protection": {
+      "title": "Warranty Protection",
+      "description": "Verified inks maintain full warranty coverage and quality guarantees"
+    }
+  },
+
+  "error": {
+    "file_required": "Please select a PDF file",
+    "file_invalid": "Invalid file type. Please upload a PDF file.",
+    "quantity_invalid": "Quantity must be between 1 and 1000",
+    "api_error": "API connection error. Please try again.",
+    "session_expired": "Your session has expired. Please start over.",
+    "insufficient_balance": "Insufficient inventory to complete this job. Please refill consumables."
+  },
+
+  "success": {
+    "job_submitted": "Job submitted successfully!",
+    "job_completed": "Job completed successfully!",
+    "inventory_refreshed": "Inventory refreshed successfully"
+  }
+}

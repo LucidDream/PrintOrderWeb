@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartSupplySystem - Compact Top Bar View</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #f8f9fa;
+            margin: 0;
+            padding: 0;
+        }
+
+        .top-bar {
+            background: white;
+            border-bottom: 3px solid #667eea;
+            padding: 0.75rem 0;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .consumable-mini {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: #f8f9fa;
+            border-radius: 20px;
+            margin: 0 0.25rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 2px solid transparent;
+        }
+
+        .consumable-mini:hover {
+            background: white;
+            border-color: #667eea;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(102, 126, 234, 0.2);
+        }
+
+        .consumable-mini.status-ok {
+            border-left: 4px solid #28a745;
+        }
+
+        .consumable-mini.status-low {
+            border-left: 4px solid #ffc107;
+        }
+
+        .consumable-mini.status-critical {
+            border-left: 4px solid #dc3545;
+        }
+
+        .mini-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            object-fit: cover;
+            background: white;
+        }
+
+        .mini-name {
+            font-size: 0.875rem;
+            font-weight: 600;
+            margin-right: 0.5rem;
+        }
+
+        .mini-balance {
+            font-size: 0.75rem;
+            color: #6c757d;
+            background: white;
+            padding: 0.125rem 0.5rem;
+            border-radius: 10px;
+        }
+
+        .expandable-panel {
+            background: white;
+            border-bottom: 1px solid #dee2e6;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+
+        .expandable-panel.expanded {
+            max-height: 600px;
+            border-bottom: 3px solid #667eea;
+        }
+
+        .detail-card {
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin: 1rem;
+        }
+
+        .detail-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+        }
+
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #f8f9fa;
+        }
+
+        .detail-label {
+            color: #6c757d;
+            font-size: 0.875rem;
+        }
+
+        .detail-value {
+            font-weight: 600;
+        }
+
+        .blockchain-verified {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            color: #667eea;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .blockchain-verified::before {
+            content: "⛓";
+        }
+
+        .toggle-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 0.5rem 1.5rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .toggle-btn:hover {
+            transform: scale(1.05);
+        }
+
+        .live-badge {
+            background: #28a745;
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 10px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            animation: pulse-badge 2s infinite;
+        }
+
+        @keyframes pulse-badge {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .main-content {
+            padding: 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .job-form {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .progress-ring {
+            width: 60px;
+            height: 60px;
+            position: relative;
+        }
+
+        .progress-circle {
+            transform: rotate(-90deg);
+        }
+
+        .cost-badge {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 10px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .separator {
+            border-left: 2px solid #dee2e6;
+            height: 40px;
+            margin: 0 1rem;
+        }
+
+        .quick-stat {
+            text-align: center;
+            padding: 0 1rem;
+        }
+
+        .quick-stat-value {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .quick-stat-label {
+            font-size: 0.75rem;
+            color: #6c757d;
+            text-transform: uppercase;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Compact Top Bar -->
+<div class="top-bar">
+    <div class="container-fluid">
+        <div class="d-flex align-items-center justify-content-between flex-wrap">
+
+            <!-- Left: Brand + Live Status -->
+            <div class="d-flex align-items-center gap-3">
+                <h5 class="mb-0">SmartSupplySystem</h5>
+                <span class="live-badge">⚡ LIVE</span>
+            </div>
+
+            <!-- Center: Mini Consumable Pills -->
+            <div class="d-flex align-items-center flex-wrap">
+
+                <!-- Toner Pills -->
+                <div class="consumable-mini status-ok" onclick="toggleDetails('cyan')">
+                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32'%3E%3Ccircle fill='%2300bcd4' cx='16' cy='16' r='16'/%3E%3C/svg%3E"
+                         class="mini-icon" alt="C">
+                    <span class="mini-name">Cyan</span>
+                    <span class="mini-balance">5,999 mL</span>
+                </div>
+
+                <div class="consumable-mini status-ok" onclick="toggleDetails('magenta')">
+                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32'%3E%3Ccircle fill='%23e91e63' cx='16' cy='16' r='16'/%3E%3C/svg%3E"
+                         class="mini-icon" alt="M">
+                    <span class="mini-name">Magenta</span>
+                    <span class="mini-balance">5,999 mL</span>
+                </div>
+
+                <div class="consumable-mini status-ok" onclick="toggleDetails('yellow')">
+                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32'%3E%3Ccircle fill='%23ffeb3b' cx='16' cy='16' r='16'/%3E%3C/svg%3E"
+                         class="mini-icon" alt="Y">
+                    <span class="mini-name">Yellow</span>
+                    <span class="mini-balance">5,999 mL</span>
+                </div>
+
+                <div class="consumable-mini status-low" onclick="toggleDetails('black')">
+                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32'%3E%3Ccircle fill='%23212529' cx='16' cy='16' r='16'/%3E%3C/svg%3E"
+                         class="mini-icon" alt="K">
+                    <span class="mini-name">Black</span>
+                    <span class="mini-balance">5,998 mL</span>
+                </div>
+
+                <div class="separator"></div>
+
+                <!-- Media Pills -->
+                <div class="consumable-mini status-low" onclick="toggleDetails('promatte')">
+                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32'%3E%3Crect fill='%23f5f5f5' width='32' height='32' rx='16'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' fill='%23666' font-size='10'%3EP%3C/text%3E%3C/svg%3E"
+                         class="mini-icon" alt="Paper">
+                    <span class="mini-name">ProMatte</span>
+                    <span class="mini-balance">67 sheets</span>
+                </div>
+
+                <div class="consumable-mini status-ok" onclick="toggleDetails('progloss')">
+                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32'%3E%3Crect fill='%23fff' stroke='%23ddd' width='32' height='32' rx='16'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' fill='%23666' font-size='10'%3EP%3C/text%3E%3C/svg%3E"
+                         class="mini-icon" alt="Paper">
+                    <span class="mini-name">ProGloss</span>
+                    <span class="mini-balance">80 sheets</span>
+                </div>
+
+            </div>
+
+            <!-- Right: Quick Stats + Toggle -->
+            <div class="d-flex align-items-center gap-3">
+                <div class="quick-stat">
+                    <div class="quick-stat-value">$1,893</div>
+                    <div class="quick-stat-label">Total Value</div>
+                </div>
+
+                <div class="separator"></div>
+
+                <button class="toggle-btn" onclick="toggleAllDetails()">
+                    📊 View Details
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- Expandable Detail Panel -->
+<div class="expandable-panel" id="detail-panel">
+    <div class="container-fluid">
+        <div class="detail-grid">
+
+            <!-- Cyan Details -->
+            <div class="detail-card" id="detail-cyan" style="display:none;">
+                <div class="d-flex align-items-center gap-3 mb-3">
+                    <img src="https://luciddream.com/wp-content/uploads/2025/10/cyan.webp"
+                         alt="Cyan" style="width: 80px; height: 80px; border-radius: 12px; object-fit: cover;"
+                         onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'80\' height=\'80\'%3E%3Crect fill=\'%2300bcd4\' width=\'80\' height=\'80\' rx=\'12\'/%3E%3C/svg%3E'">
+                    <div>
+                        <h6 class="mb-1">INKA Cyan Ink Bottle</h6>
+                        <span class="blockchain-verified">Blockchain Verified</span>
+                    </div>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Available Balance</span>
+                    <span class="detail-value">5,999.24 mL</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Purchase Price</span>
+                    <span class="detail-value">$240.00</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Tax (9%)</span>
+                    <span class="detail-value">$21.60</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Total Cost</span>
+                    <span class="detail-value text-primary">$261.60</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Page Yield</span>
+                    <span class="detail-value">6,000 pages</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Color</span>
+                    <span class="detail-value">CYAN</span>
+                </div>
+            </div>
+
+            <!-- Magenta Details -->
+            <div class="detail-card" id="detail-magenta" style="display:none;">
+                <div class="d-flex align-items-center gap-3 mb-3">
+                    <img src="https://luciddream.com/wp-content/uploads/2025/10/magenta.webp"
+                         alt="Magenta" style="width: 80px; height: 80px; border-radius: 12px; object-fit: cover;"
+                         onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'80\' height=\'80\'%3E%3Crect fill=\'%23e91e63\' width=\'80\' height=\'80\' rx=\'12\'/%3E%3C/svg%3E'">
+                    <div>
+                        <h6 class="mb-1">INKA Magenta Ink Bottle</h6>
+                        <span class="blockchain-verified">Blockchain Verified</span>
+                    </div>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Available Balance</span>
+                    <span class="detail-value">5,999.24 mL</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Purchase Price</span>
+                    <span class="detail-value">$240.00</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Tax (9%)</span>
+                    <span class="detail-value">$21.60</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Total Cost</span>
+                    <span class="detail-value text-primary">$261.60</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Page Yield</span>
+                    <span class="detail-value">6,000 pages</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Color</span>
+                    <span class="detail-value">MAGENTA</span>
+                </div>
+            </div>
+
+            <!-- Yellow Details -->
+            <div class="detail-card" id="detail-yellow" style="display:none;">
+                <div class="d-flex align-items-center gap-3 mb-3">
+                    <img src="https://luciddream.com/wp-content/uploads/2025/10/yellow.webp"
+                         alt="Yellow" style="width: 80px; height: 80px; border-radius: 12px; object-fit: cover;"
+                         onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'80\' height=\'80\'%3E%3Crect fill=\'%23ffeb3b\' width=\'80\' height=\'80\' rx=\'12\'/%3E%3C/svg%3E'">
+                    <div>
+                        <h6 class="mb-1">INKA Yellow Ink Bottle</h6>
+                        <span class="blockchain-verified">Blockchain Verified</span>
+                    </div>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Available Balance</span>
+                    <span class="detail-value">5,999.24 mL</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Purchase Price</span>
+                    <span class="detail-value">$240.00</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Tax (9%)</span>
+                    <span class="detail-value">$21.60</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Total Cost</span>
+                    <span class="detail-value text-primary">$261.60</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Page Yield</span>
+                    <span class="detail-value">6,000 pages</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Color</span>
+                    <span class="detail-value">YELLOW</span>
+                </div>
+            </div>
+
+            <!-- Black Details -->
+            <div class="detail-card" id="detail-black" style="display:none;">
+                <div class="d-flex align-items-center gap-3 mb-3">
+                    <img src="https://luciddream.com/wp-content/uploads/2025/10/black.webp"
+                         alt="Black" style="width: 80px; height: 80px; border-radius: 12px; object-fit: cover;"
+                         onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'80\' height=\'80\'%3E%3Crect fill=\'%23212529\' width=\'80\' height=\'80\' rx=\'12\'/%3E%3C/svg%3E'">
+                    <div>
+                        <h6 class="mb-1">INKA Black Ink Bottle</h6>
+                        <span class="blockchain-verified">Blockchain Verified</span>
+                    </div>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Available Balance</span>
+                    <span class="detail-value">5,998.78 mL</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Purchase Price</span>
+                    <span class="detail-value">$240.00</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Tax (9%)</span>
+                    <span class="detail-value">$21.60</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Total Cost</span>
+                    <span class="detail-value text-primary">$261.60</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Page Yield</span>
+                    <span class="detail-value">6,000 pages</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Color</span>
+                    <span class="detail-value">BLACK</span>
+                </div>
+            </div>
+
+            <!-- ProMatte Details -->
+            <div class="detail-card" id="detail-promatte" style="display:none;">
+                <div class="d-flex align-items-center gap-3 mb-3">
+                    <img src="https://luciddream.com/wp-content/uploads/2025/09/papermills.webp"
+                         alt="ProMatte" style="width: 80px; height: 80px; border-radius: 12px; object-fit: cover;"
+                         onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'80\' height=\'80\'%3E%3Crect fill=\'%23f5f5f5\' width=\'80\' height=\'80\' rx=\'12\'/%3E%3Ctext x=\'50%25\' y=\'50%25\' text-anchor=\'middle\' dy=\'.3em\' fill=\'%23666\' font-size=\'12\'%3EPAPER%3C/text%3E%3C/svg%3E'">
+                    <div>
+                        <h6 class="mb-1">Paper Mills ProMatte A4</h6>
+                        <span class="blockchain-verified">Blockchain Verified</span>
+                    </div>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Available Balance</span>
+                    <span class="detail-value">67 sheets</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Purchase Price</span>
+                    <span class="detail-value">$67.00</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Tax (9%)</span>
+                    <span class="detail-value">$6.03</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Total Cost</span>
+                    <span class="detail-value text-primary">$73.03</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Media Type</span>
+                    <span class="detail-value">MATTE</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Size</span>
+                    <span class="detail-value">8.3 × 11.7 in (A4)</span>
+                </div>
+            </div>
+
+            <!-- ProGloss Details -->
+            <div class="detail-card" id="detail-progloss" style="display:none;">
+                <div class="d-flex align-items-center gap-3 mb-3">
+                    <img src="https://luciddream.com/wp-content/uploads/2025/09/papermills-gloss.webp"
+                         alt="ProGloss" style="width: 80px; height: 80px; border-radius: 12px; object-fit: cover;"
+                         onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'80\' height=\'80\'%3E%3Crect fill=\'%23fff\' stroke=\'%23ddd\' width=\'80\' height=\'80\' rx=\'12\'/%3E%3Ctext x=\'50%25\' y=\'50%25\' text-anchor=\'middle\' dy=\'.3em\' fill=\'%23666\' font-size=\'12\'%3EPAPER%3C/text%3E%3C/svg%3E'">
+                    <div>
+                        <h6 class="mb-1">Paper Mills ProGloss Legal</h6>
+                        <span class="blockchain-verified">Blockchain Verified</span>
+                    </div>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Available Balance</span>
+                    <span class="detail-value">80 sheets</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Purchase Price</span>
+                    <span class="detail-value">$80.00</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Tax (9%)</span>
+                    <span class="detail-value">$7.20</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Total Cost</span>
+                    <span class="detail-value text-primary">$87.20</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Media Type</span>
+                    <span class="detail-value">GLOSS</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Size</span>
+                    <span class="detail-value">8.5 × 14 in (Legal)</span>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- Main Content Area -->
+<div class="main-content">
+    <div class="job-form">
+        <h3 class="mb-4">Submit Print Job</h3>
+
+        <div class="mb-3">
+            <label class="form-label">Upload PDF File</label>
+            <input type="file" class="form-control" accept=".pdf">
+        </div>
+
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <label class="form-label">Number of Copies</label>
+                <input type="number" class="form-control" value="1" min="1">
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Print Quality</label>
+                <select class="form-select">
+                    <option>Standard Quality</option>
+                    <option>Draft Quality</option>
+                    <option>High Quality</option>
+                </select>
+            </div>
+        </div>
+
+        <button class="btn btn-primary btn-lg w-100">Estimate Cost & Submit</button>
+    </div>
+
+    <div class="alert alert-info mt-4">
+        <strong>💡 Pro Tip:</strong> Click any consumable pill in the top bar to view detailed information.
+        All values are updated in real-time from the blockchain.
+    </div>
+</div>
+
+<script>
+let currentlyExpanded = null;
+
+function toggleDetails(consumableId) {
+    const panel = document.getElementById('detail-panel');
+    const detailCard = document.getElementById('detail-' + consumableId);
+
+    // Hide all other cards
+    document.querySelectorAll('.detail-card').forEach(card => {
+        if (card.id !== 'detail-' + consumableId) {
+            card.style.display = 'none';
+        }
+    });
+
+    // Toggle this card
+    if (currentlyExpanded === consumableId) {
+        panel.classList.remove('expanded');
+        detailCard.style.display = 'none';
+        currentlyExpanded = null;
+    } else {
+        detailCard.style.display = 'block';
+        panel.classList.add('expanded');
+        currentlyExpanded = consumableId;
+    }
+}
+
+function toggleAllDetails() {
+    const panel = document.getElementById('detail-panel');
+    const allCards = document.querySelectorAll('.detail-card');
+
+    if (panel.classList.contains('expanded')) {
+        panel.classList.remove('expanded');
+        allCards.forEach(card => card.style.display = 'none');
+        currentlyExpanded = null;
+    } else {
+        panel.classList.add('expanded');
+        allCards.forEach(card => card.style.display = 'block');
+        currentlyExpanded = 'all';
+    }
+}
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

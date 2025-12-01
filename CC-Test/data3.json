@@ -1,0 +1,39 @@
+{
+  "inventoryParameters": {
+    "wallets": [
+      {
+        "publicKey": "Cc4m9JfsgUYEZxNDyzRGXBZAd9PCxDg2kXEPEz3giSoG",
+        "recoveryPhrase": "media wallet recovery phrase here",
+        "accounts": [
+          {
+            "mintId": "EvvjtQ1qFsdSKet1SW1hVEyMeMKGSs4SPa1HSRnW4BVu",
+            "estimatedBalance": 47.0,
+            "currentExpenditure": 3.0,
+            "metadata": {}
+          }
+        ]
+      },
+      {
+        "publicKey": "9fWgR1g3hwciD7fp2NqCadUHrCQ6wmmHrZHrhHvQUvga",
+        "recoveryPhrase": "toner wallet recovery phrase here",
+        "accounts": [
+          {
+            "mintId": "GJfidm8zqYWHiWDoCrtYKxfdxgufXVqsCDrm7bjTux31",
+            "estimatedBalance": 5998.09,
+            "currentExpenditure": 0.03,
+            "metadata": {}
+          }
+        ]
+      }
+    ]
+  },
+  "jobMetadata": {
+    "jobName": "Job 3",
+    "submittedAt": "2025-11-19T12:00:00+00:00",
+    "quantity": 3,
+    "colorMode": "black_and_white",
+    "turnaroundTime": "standard",
+    "pdfPages": 1,
+    "estimatedCost": 15.00
+  }
+}

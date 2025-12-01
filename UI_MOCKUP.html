@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Print Order Web - UI Mockup (Proposed)</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        /* Sidebar Styling */
+        #live-inventory-sidebar {
+            background-color: #f8f9fa;
+            border-right: 1px solid #dee2e6;
+            height: 100vh;
+            position: sticky;
+            top: 0;
+            overflow-y: auto;
+            scrollbar-width: thin;
+        }
+
+        #live-inventory-sidebar::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        #live-inventory-sidebar::-webkit-scrollbar-thumb {
+            background: #6c757d;
+            border-radius: 4px;
+        }
+
+        /* Consumable Card */
+        .consumable-card {
+            transition: all 0.2s ease;
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .consumable-card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            transform: translateY(-2px);
+        }
+
+        /* Status-based borders */
+        .consumable-card[data-status="ok"] {
+            border-left: 5px solid #28a745;
+        }
+
+        .consumable-card[data-status="low"] {
+            border-left: 5px solid #ffc107;
+        }
+
+        .consumable-card[data-status="critical"] {
+            border-left: 5px solid #dc3545;
+        }
+
+        .consumable-card[data-status="empty"] {
+            border-left: 5px solid #6c757d;
+            opacity: 0.6;
+        }
+
+        .consumable-card img {
+            width: 100%;
+            height: 100px;
+            object-fit: cover;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        /* Badge styling */
+        .status-badge {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            font-size: 10px;
+            padding: 3px 8px;
+            border-radius: 12px;
+        }
+
+        /* Field icons */
+        .field-icon {
+            width: 20px;
+            display: inline-block;
+            text-align: center;
+        }
+
+        /* Update animation */
+        @keyframes highlight-change {
+            0% { background-color: #fff3cd; }
+            100% { background-color: white; }
+        }
+
+        .value-changed {
+            animation: highlight-change 1.5s ease;
+        }
+
+        /* Header styling */
+        .sidebar-header {
+            background: white;
+            border-bottom: 2px solid #dee2e6;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        /* Section headers */
+        .section-header {
+            font-size: 0.875rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: #6c757d;
+            letter-spacing: 0.5px;
+            margin-bottom: 1rem;
+        }
+
+        /* Details section */
+        .details-content {
+            font-size: 0.8rem;
+            line-height: 1.6;
+        }
+
+        /* Refresh button */
+        #refresh-inventory {
+            transition: all 0.2s ease;
+        }
+
+        #refresh-inventory.loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        #refresh-inventory.loading::before {
+            content: "⏳ ";
+        }
+
+        /* Main content area */
+        .main-content {
+            padding: 2rem;
+        }
+
+        /* Demo notice */
+        .demo-notice {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 991px) {
+            #live-inventory-sidebar {
+                position: relative !important;
+                height: auto !important;
+                max-height: 500px;
+                border-right: none;
+                border-bottom: 2px solid #dee2e6;
+            }
+        }
+
+        /* Card content styling */
+        .card-name {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #212529;
+            margin-bottom: 0.5rem;
+        }
+
+        .card-field {
+            font-size: 0.85rem;
+            color: #495057;
+            margin-bottom: 0.25rem;
+            display: flex;
+            align-items: center;
+        }
+
+        .card-field strong {
+            font-weight: 600;
+        }
+
+        /* Total cost highlight */
+        .total-cost {
+            font-weight: 700;
+            color: #0d6efd;
+            font-size: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">
+                <strong>Print Order Web</strong>
+            </a>
+            <span class="navbar-text text-light">
+                <small>UI Mockup - Proposed Design</small>
+            </span>
+        </div>
+    </nav>
+
+    <!-- Main Layout -->
+    <div class="container-fluid">
+        <div class="row">
+            <!-- LIVE INVENTORY SIDEBAR -->
+            <div class="col-lg-3 col-xl-2 p-0" id="live-inventory-sidebar">
+                <!-- Sidebar Header -->
+                <div class="sidebar-header p-3">
+                    <h5 class="mb-2">📦 Live Inventory</h5>
+                    <small class="text-muted d-block mb-2">
+                        Last updated: <span id="last-update">Just now</span>
+                    </small>
+                    <button class="btn btn-sm btn-outline-primary w-100" id="refresh-inventory" onclick="simulateRefresh()">
+                        🔄 Refresh Now
+                    </button>
+                </div>
+
+                <!-- TONER SECTION -->
+                <div class="p-3">
+                    <div class="section-header">🎨 Toner / Ink</div>
+
+                    <!-- Cyan Toner -->
+                    <div class="consumable-card mb-3" data-status="ok">
+                        <div style="position: relative;">
+                            <img src="https://luciddream.com/wp-content/uploads/2025/10/cyan.webp"
+                                 alt="Cyan Ink"
+                                 onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22100%22%3E%3Crect fill=%22%2300bcd4%22 width=%22200%22 height=%22100%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 font-family=%22Arial%22 font-size=%2218%22 fill=%22white%22 text-anchor=%22middle%22 dy=%22.3em%22%3ECYAN INK%3C/text%3E%3C/svg%3E'">
+                            <span class="badge bg-success status-badge">Available</span>
+                        </div>
+                        <div class="p-2">
+                            <div class="card-name text-truncate">Inka Cyan Ink Bottle</div>
+                            <div class="card-field">
+                                <span class="field-icon">📦</span>
+                                <strong>5,999.24</strong> mL
+                            </div>
+                            <div class="card-field total-cost">
+                                <span class="field-icon">💰</span>
+                                $261.60
+                            </div>
+                            <div class="card-field">
+                                <span class="field-icon">📄</span>
+                                6,000 pages yield
+                            </div>
+                            <div class="card-field">
+                                <span class="field-icon">🎨</span>
+                                <span class="badge bg-info">CYAN</span>
+                            </div>
+                        </div>
+                        <div class="border-top">
+                            <button class="btn btn-sm btn-link w-100 text-decoration-none"
+                                    data-bs-toggle="collapse"
+                                    data-bs-target="#details-cyan">
+                                <small>ℹ️ Show Details</small>
+                            </button>
+                        </div>
+                        <div id="details-cyan" class="collapse">
+                            <div class="p-2 bg-light details-content">
+                                <div><strong>SKU:</strong> INKA-INK-CYN-100ML-251024</div>
+                                <div><strong>Price:</strong> $240.00</div>
+                                <div><strong>Tax:</strong> 9% ($21.60)</div>
+                                <div><strong>Total:</strong> $261.60</div>
+                                <div><strong>Chemistry:</strong> Aqueous Pigment</div>
+                                <div><strong>Viscosity:</strong> 3.6 mPa·s</div>
+                                <div><strong>Shelf Life:</strong> 12 months</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Magenta Toner -->
+                    <div class="consumable-card mb-3" data-status="ok">
+                        <div style="position: relative;">
+                            <img src="https://luciddream.com/wp-content/uploads/2025/10/magenta.webp"
+                                 alt="Magenta Ink"
+                                 onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22100%22%3E%3Crect fill=%22%23e91e63%22 width=%22200%22 height=%22100%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 font-family=%22Arial%22 font-size=%2218%22 fill=%22white%22 text-anchor=%22middle%22 dy=%22.3em%22%3EMAGENTA INK%3C/text%3E%3C/svg%3E'">
+                            <span class="badge bg-success status-badge">Available</span>
+                        </div>
+                        <div class="p-2">
+                            <div class="card-name text-truncate">Inka Magenta Ink Bottle</div>
+                            <div class="card-field">
+                                <span class="field-icon">📦</span>
+                                <strong>5,999.24</strong> mL
+                            </div>
+                            <div class="card-field total-cost">
+                                <span class="field-icon">💰</span>
+                                $261.60
+                            </div>
+                            <div class="card-field">
+                                <span class="field-icon">📄</span>
+                                6,000 pages yield
+                            </div>
+                            <div class="card-field">
+                                <span class="field-icon">🎨</span>
+                                <span class="badge bg-danger">MAGENTA</span>
+                            </div>
+                        </div>
+                        <div class="border-top">
+                            <button class="btn btn-sm btn-link w-100 text-decoration-none"
+                                    data-bs-toggle="collapse"
+                                    data-bs-target="#details-magenta">
+                                <small>ℹ️ Show Details</small>
+                            </button>
+                        </div>
+                        <div id="details-magenta" class="collapse">
+                            <div class="p-2 bg-light details-content">
+                                <div><strong>SKU:</strong> INKA-INK-MGT-100ML-251024</div>
+                                <div><strong>Price:</strong> $240.00</div>
+                                <div><strong>Tax:</strong> 9% ($21.60)</div>
+                                <div><strong>Total:</strong> $261.60</div>
+                                <div><strong>Chemistry:</strong> Aqueous Pigment</div>
+                                <div><strong>Viscosity:</strong> 3.6 mPa·s</div>
+                                <div><strong>Shelf Life:</strong> 12 months</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Yellow Toner -->
+                    <div class="consumable-card mb-3" data-status="ok">
+                        <div style="position: relative;">
+                            <img src="https://luciddream.com/wp-content/uploads/2025/10/yellow.webp"
+                                 alt="Yellow Ink"
+                                 onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22100%22%3E%3Crect fill=%22%23ffeb3b%22 width=%22200%22 height=%22100%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 font-family=%22Arial%22 font-size=%2218%22 fill=%22%23333%22 text-anchor=%22middle%22 dy=%22.3em%22%3EYELLOW INK%3C/text%3E%3C/svg%3E'">
+                            <span class="badge bg-success status-badge">Available</span>
+                        </div>
+                        <div class="p-2">
+                            <div class="card-name text-truncate">INKA Yellow Ink Bottle</div>
+                            <div class="card-field">
+                                <span class="field-icon">📦</span>
+                                <strong>5,999.24</strong> mL
+                            </div>
+                            <div class="card-field total-cost">
+                                <span class="field-icon">💰</span>
+                                $261.60
+                            </div>
+                            <div class="card-field">
+                                <span class="field-icon">📄</span>
+                                6,000 pages yield
+                            </div>
+                            <div class="card-field">
+                                <span class="field-icon">🎨</span>
+                                <span class="badge bg-warning text-dark">YELLOW</span>
+                            </div>
+                        </div>
+                        <div class="border-top">
+                            <button class="btn btn-sm btn-link w-100 text-decoration-none"
+                                    data-bs-toggle="collapse"
+                                    data-bs-target="#details-yellow">
+                                <small>ℹ️ Show Details</small>
+                            </button>
+                        </div>
+                        <div id="details-yellow" class="collapse">
+                            <div class="p-2 bg-light details-content">
+                                <div><strong>SKU:</strong> INKA-INK-YLW-100ML-251024</div>
+                                <div><strong>Price:</strong> $240.00</div>
+                                <div><strong>Tax:</strong> 9% ($21.60)</div>
+                                <div><strong>Total:</strong> $261.60</div>
+                                <div><strong>Chemistry:</strong> Aqueous Pigment</div>
+                                <div><strong>Viscosity:</strong> 3.6 mPa·s</div>
+                                <div><strong>Shelf Life:</strong> 12 months</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Black Toner -->
+                    <div class="consumable-card mb-3" data-status="low">
+                        <div style="position: relative;">
+                            <img src="https://luciddream.com/wp-content/uploads/2025/10/black.webp"
+                                 alt="Black Ink"
+                                 onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22100%22%3E%3Crect fill=%22%23212121%22 width=%22200%22 height=%22100%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 font-family=%22Arial%22 font-size=%2218%22 fill=%22white%22 text-anchor=%22middle%22 dy=%22.3em%22%3EBLACK INK%3C/text%3E%3C/svg%3E'">
+                            <span class="badge bg-warning text-dark status-badge">Running Low</span>
+                        </div>
+                        <div class="p-2">
+                            <div class="card-name text-truncate">INKA Black Ink Bottle</div>
+                            <div class="card-field">
+                                <span class="field-icon">📦</span>
+                                <strong class="value-changed">2,998.78</strong> mL
+                            </div>
+                            <div class="card-field total-cost">
+                                <span class="field-icon">💰</span>
+                                $261.60
+                            </div>
+                            <div class="card-field">
+                                <span class="field-icon">📄</span>
+                                6,000 pages yield
+                            </div>
+                            <div class="card-field">
+                                <span class="field-icon">🎨</span>
+                                <span class="badge bg-dark">BLACK</span>
+                            </div>
+                        </div>
+                        <div class="border-top">
+                            <button class="btn btn-sm btn-link w-100 text-decoration-none"
+                                    data-bs-toggle="collapse"
+                                    data-bs-target="#details-black">
+                                <small>ℹ️ Show Details</small>
+                            </button>
+                        </div>
+                        <div id="details-black" class="collapse">
+                            <div class="p-2 bg-light details-content">
+                                <div><strong>SKU:</strong> INKA-INK-BLK-100ML-251024</div>
+                                <div><strong>Price:</strong> $240.00</div>
+                                <div><strong>Tax:</strong> 9% ($21.60)</div>
+                                <div><strong>Total:</strong> $261.60</div>
+                                <div><strong>Chemistry:</strong> Aqueous Pigment</div>
+                                <div><strong>Viscosity:</strong> 3.6 mPa·s</div>
+                                <div><strong>Shelf Life:</strong> 12 months</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- MEDIA SECTION -->
+                <div class="p-3 border-top">
+                    <div class="section-header">📄 Media</div>
+
+                    <!-- ProMatte A4 -->
+                    <div class="consumable-card mb-3" data-status="low">
+                        <div style="position: relative;">
+                            <img src="https://luciddream.com/wp-content/uploads/2025/09/papermills.webp"
+                                 alt="ProMatte A4"
+                                 onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22100%22%3E%3Crect fill=%22%23f5f5f5%22 width=%22200%22 height=%22100%22/%3E%3Crect fill=%22white%22 x=%2220%22 y=%2220%22 width=%22160%22 height=%2260%22 stroke=%22%23333%22 stroke-width=%222%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 font-family=%22Arial%22 font-size=%2214%22 fill=%22%23333%22 text-anchor=%22middle%22 dy=%22.3em%22%3EProMatte A4%3C/text%3E%3C/svg%3E'">
+                            <span class="badge bg-warning text-dark status-badge">Running Low</span>
+                        </div>
+                        <div class="p-2">
+                            <div class="card-name text-truncate">Paper Mills ProMatte A4</div>
+                            <div class="card-field">
+                                <span class="field-icon">📦</span>
+                                <strong class="value-changed">67</strong> sheets
+                            </div>
+                            <div class="card-field total-cost">
+                                <span class="field-icon">💰</span>
+                                $73.03
+                            </div>
+                            <div class="card-field">
+                                <span class="field-icon">📏</span>
+                                8.3" × 11.7"
+                            </div>
+                            <div class="card-field">
+                                <span class="field-icon">✨</span>
+                                <span class="badge bg-secondary">MATTE</span>
+                            </div>
+                        </div>
+                        <div class="border-top">
+                            <button class="btn btn-sm btn-link w-100 text-decoration-none"
+                                    data-bs-toggle="collapse"
+                                    data-bs-target="#details-promatte">
+                                <small>ℹ️ Show Details</small>
+                            </button>
+                        </div>
+                        <div id="details-promatte" class="collapse">
+                            <div class="p-2 bg-light details-content">
+                                <div><strong>SKU:</strong> M-MTHS-TPA4L20-251024</div>
+                                <div><strong>Price:</strong> $67.00</div>
+                                <div><strong>Tax:</strong> 9% ($6.03)</div>
+                                <div><strong>Total:</strong> $73.03</div>
+                                <div><strong>Grammage:</strong> 180 g/m²</div>
+                                <div><strong>Coating:</strong> Microporous</div>
+                                <div><strong>Brightness:</strong> 94%</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ProGloss Legal -->
+                    <div class="consumable-card mb-3" data-status="ok">
+                        <div style="position: relative;">
+                            <img src="https://luciddream.com/wp-content/uploads/2025/09/papermills.webp"
+                                 alt="ProGloss Legal"
+                                 onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22100%22%3E%3Cdefs%3E%3ClinearGradient id=%22gloss%22 x1=%220%25%22 y1=%220%25%22 x2=%22100%25%22 y2=%22100%25%22%3E%3Cstop offset=%220%25%22 style=%22stop-color:%23fff;stop-opacity:1%22 /%3E%3Cstop offset=%22100%25%22 style=%22stop-color:%23e0e0e0;stop-opacity:1%22 /%3E%3C/linearGradient%3E%3C/defs%3E%3Crect fill=%22url(%23gloss)%22 width=%22200%22 height=%22100%22/%3E%3Crect fill=%22none%22 x=%2220%22 y=%2215%22 width=%22160%22 height=%2270%22 stroke=%22%23333%22 stroke-width=%222%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 font-family=%22Arial%22 font-size=%2214%22 fill=%22%23333%22 text-anchor=%22middle%22 dy=%22.3em%22%3EProGloss Legal%3C/text%3E%3C/svg%3E'">
+                            <span class="badge bg-success status-badge">Available</span>
+                        </div>
+                        <div class="p-2">
+                            <div class="card-name text-truncate">Paper Mills ProGloss Legal</div>
+                            <div class="card-field">
+                                <span class="field-icon">📦</span>
+                                <strong>100</strong> sheets
+                            </div>
+                            <div class="card-field total-cost">
+                                <span class="field-icon">💰</span>
+                                $89.45
+                            </div>
+                            <div class="card-field">
+                                <span class="field-icon">📏</span>
+                                8.5" × 14"
+                            </div>
+                            <div class="card-field">
+                                <span class="field-icon">✨</span>
+                                <span class="badge bg-primary">GLOSSY</span>
+                            </div>
+                        </div>
+                        <div class="border-top">
+                            <button class="btn btn-sm btn-link w-100 text-decoration-none"
+                                    data-bs-toggle="collapse"
+                                    data-bs-target="#details-progloss">
+                                <small>ℹ️ Show Details</small>
+                            </button>
+                        </div>
+                        <div id="details-progloss" class="collapse">
+                            <div class="p-2 bg-light details-content">
+                                <div><strong>SKU:</strong> PM-GLHS-TPLEG20-251024</div>
+                                <div><strong>Price:</strong> $82.00</div>
+                                <div><strong>Tax:</strong> 9% ($7.45)</div>
+                                <div><strong>Total:</strong> $89.45</div>
+                                <div><strong>Grammage:</strong> 180 g/m²</div>
+                                <div><strong>Coating:</strong> Microporous</div>
+                                <div><strong>Gloss:</strong> 85 GU</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MAIN CONTENT AREA -->
+            <div class="col-lg-9 col-xl-10">
+                <div class="main-content">
+                    <!-- Demo Notice -->
+                    <div class="demo-notice">
+                        <h4 class="mb-2">🎨 UI Mockup - Proposed Design</h4>
+                        <p class="mb-0">
+                            <strong>Left Sidebar:</strong> Live inventory panel with consumables grouped by type<br>
+                            <strong>Main Area:</strong> Job submission workflow continues as normal<br>
+                            <strong>Try:</strong> Click "Show Details" on any consumable • Click "Refresh Now" to see update animation
+                        </p>
+                    </div>
+
+                    <!-- Sample Content - Job Details Page -->
+                    <div class="card shadow-sm">
+                        <div class="card-body">
+                            <h2 class="mb-4">Step 2 · Configure Job</h2>
+
+                            <form>
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Job Name</label>
+                                    <input type="text" class="form-control" value="Business Cards - Sample" readonly>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Quantity</label>
+                                    <input type="number" class="form-control" value="100" min="1">
+                                    <small class="text-muted">Available: 67 sheets (ProMatte A4)</small>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Color Mode</label>
+                                    <select class="form-select">
+                                        <option selected>Full Color (4 channels)</option>
+                                        <option>Monochrome (1 channel)</option>
+                                    </select>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Print Quality</label>
+                                    <select class="form-select">
+                                        <option>Draft (-30% toner, lighter output)</option>
+                                        <option selected>Standard (balanced quality)</option>
+                                        <option>High (+20% toner, richer output)</option>
+                                    </select>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Media</label>
+                                    <select class="form-select">
+                                        <option selected>ProMatte A4 (67 sheets available) - $73.03</option>
+                                        <option>ProGloss Legal (100 sheets available) - $89.45</option>
+                                    </select>
+                                </div>
+
+                                <div class="alert alert-info">
+                                    <strong>💡 Notice:</strong> Consumable balances in the sidebar update in real-time.
+                                    Check the sidebar to see current availability before submitting your job.
+                                </div>
+
+                                <div class="d-flex justify-content-between">
+                                    <button type="button" class="btn btn-secondary">← Back to Upload</button>
+                                    <button type="submit" class="btn btn-primary">Continue to Review →</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Feature Highlights -->
+                    <div class="row mt-4">
+                        <div class="col-md-4">
+                            <div class="card h-100">
+                                <div class="card-body text-center">
+                                    <h1 class="mb-3">🖼️</h1>
+                                    <h5>Visual Identification</h5>
+                                    <p class="text-muted small">
+                                        Preview images help users quickly identify consumables
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card h-100">
+                                <div class="card-body text-center">
+                                    <h1 class="mb-3">🔄</h1>
+                                    <h5>Real-Time Updates</h5>
+                                    <p class="text-muted small">
+                                        Balance changes reflect within 5-30 seconds
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card h-100">
+                                <div class="card-body text-center">
+                                    <h1 class="mb-3">📊</h1>
+                                    <h5>Status Indicators</h5>
+                                    <p class="text-muted small">
+                                        Color-coded borders show availability at a glance
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Legend -->
+                    <div class="card mt-4">
+                        <div class="card-body">
+                            <h5 class="mb-3">📖 Status Indicator Legend</h5>
+                            <div class="row">
+                                <div class="col-md-3 mb-2">
+                                    <div class="border-start border-5 border-success ps-2">
+                                        <strong>Green</strong><br>
+                                        <small class="text-muted">Plenty available (>50%)</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 mb-2">
+                                    <div class="border-start border-5 border-warning ps-2">
+                                        <strong>Yellow</strong><br>
+                                        <small class="text-muted">Running low (10-50%)</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 mb-2">
+                                    <div class="border-start border-5 border-danger ps-2">
+                                        <strong>Red</strong><br>
+                                        <small class="text-muted">Critical (<10%)</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 mb-2">
+                                    <div class="border-start border-5 border-secondary ps-2">
+                                        <strong>Gray</strong><br>
+                                        <small class="text-muted">Out of stock</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let updateTime = Date.now();
+        let updateInterval;
+
+        // Simulate refresh functionality
+        function simulateRefresh() {
+            const btn = document.getElementById('refresh-inventory');
+            btn.classList.add('loading');
+            btn.textContent = 'Updating...';
+
+            // Simulate API delay
+            setTimeout(() => {
+                // Update timestamp
+                updateTime = Date.now();
+                updateLastUpdate();
+
+                // Simulate value change (decrement Black ink and ProMatte media slightly)
+                const blackBalance = document.querySelector('[data-status="low"] .value-changed');
+                if (blackBalance) {
+                    const current = parseFloat(blackBalance.textContent.replace(',', ''));
+                    blackBalance.textContent = (current - 1.22).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+                    blackBalance.classList.add('value-changed');
+                    setTimeout(() => blackBalance.classList.remove('value-changed'), 1500);
+                }
+
+                btn.classList.remove('loading');
+                btn.innerHTML = '🔄 Refresh Now';
+
+                // Show toast notification
+                showToast('Inventory updated successfully!');
+            }, 800);
+        }
+
+        // Update "last updated" timestamp
+        function updateLastUpdate() {
+            const el = document.getElementById('last-update');
+            if (el) {
+                const seconds = Math.floor((Date.now() - updateTime) / 1000);
+                if (seconds === 0) {
+                    el.textContent = 'Just now';
+                } else if (seconds < 60) {
+                    el.textContent = `${seconds}s ago`;
+                } else {
+                    const minutes = Math.floor(seconds / 60);
+                    el.textContent = `${minutes}m ago`;
+                }
+            }
+        }
+
+        // Show toast notification
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.className = 'position-fixed bottom-0 end-0 p-3';
+            toast.style.zIndex = '9999';
+            toast.innerHTML = `
+                <div class="toast show" role="alert">
+                    <div class="toast-header">
+                        <strong class="me-auto">✅ Success</strong>
+                        <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+                    </div>
+                    <div class="toast-body">${message}</div>
+                </div>
+            `;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        // Start updating timestamp every second
+        updateInterval = setInterval(updateLastUpdate, 1000);
+
+        // Auto-refresh demo (every 15 seconds)
+        setInterval(() => {
+            const now = Date.now();
+            if (now - updateTime > 15000) { // 15 seconds since last update
+                console.log('Auto-refresh triggered (demo mode)');
+                // In real implementation, this would fetch from API
+            }
+        }, 15000);
+    </script>
+</body>
+</html>

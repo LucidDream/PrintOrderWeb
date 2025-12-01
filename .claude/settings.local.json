@@ -1,0 +1,29 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -m PyInstaller:*)",
+      "Bash(del compositelog.txt consolelog.txt Log.txt nul template_output.txt QUICK_START.txt .commit_message.txt job_payload_sent_to_ledger.json 2)",
+      "Bash(nul)",
+      "Bash(if exist compositelog.txt del compositelog.txt)",
+      "Bash(if exist consolelog.txt del consolelog.txt)",
+      "Bash(if exist Log.txt del Log.txt)",
+      "Bash(if exist nul del nul)",
+      "Bash(if exist template_output.txt del template_output.txt)",
+      "Bash(cat:*)",
+      "Bash(dir /s /b consolelog.txt 2)",
+      "Bash(git add:*)",
+      "Bash(for f in job_JOB00E7EB6289A91000.json job_JOB0078EB7289A91000.json job_JOB00F01A8289A91000.json)",
+      "Bash(do echo \"=== $f ===\")",
+      "Bash(python:*)",
+      "Bash(done)",
+      "Bash(find:*)",
+      "Bash(dir /b \"C:\\Users\\davidlewis\\source\\print_order_web\")",
+      "Bash(C:Usersdavidlewissourceprint_order_web.venvScriptspip.exe install -r C:Usersdavidlewissourceprint_order_webrequirements.txt)",
+      "Bash(\"C:\\Users\\davidlewis\\source\\print_order_web\\.venv\\Scripts\\pip.exe\" install -r \"C:\\Users\\davidlewis\\source\\print_order_web\\requirements.txt\")",
+      "Bash(powershell -Command:*)",
+      "Bash(git init:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

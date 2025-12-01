@@ -1,0 +1,210 @@
+{% extends "base_with_sidebar.html" %}
+{% block title %}Processing Order{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-12">
+        <h2 class="mb-3">Submitting Your Order</h2>
+
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="mb-4">
+                    <h5 id="status-message" class="mb-3">Submitting order (blockchain will finalize in the background)...</h5>
+
+                    <div class="progress" style="height: 30px;">
+                        <div id="progress-bar"
+                             class="progress-bar progress-bar-striped progress-bar-animated bg-primary"
+                             role="progressbar"
+                             style="width: 0%;"
+                             aria-valuenow="0"
+                             aria-valuemin="0"
+                             aria-valuemax="100">
+                            <span id="progress-text" class="fw-bold">0%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="status-details" class="alert alert-info">
+                    <div class="d-flex align-items-center">
+                        <div class="spinner-border spinner-border-sm me-2" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <span>We only wait for submission acknowledgment. Blockchain settlement continues asynchronously.</span>
+                    </div>
+                </div>
+
+                <div id="error-container" class="alert alert-danger d-none">
+                    <h6 class="alert-heading">Submission Error</h6>
+                    <p id="error-message" class="mb-2"></p>
+                    <div class="mt-3">
+                        <a href="{{ url_for('review') }}" class="btn btn-sm btn-outline-danger">Back to Review</a>
+                        <a href="{{ url_for('upload') }}" class="btn btn-sm btn-outline-secondary">Start Over</a>
+                    </div>
+                </div>
+
+                <div class="text-center mt-4">
+                    <p class="text-muted small mb-0">
+                        <strong>Job:</strong> {{ order.job_name }}<br>
+                        <strong>Quantity:</strong> {{ order.choices.quantity }} copies<br>
+                        <span id="elapsed-time">Elapsed time: 0s</span>
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="alert alert-warning mt-3">
+            <strong>Please keep this tab open until we confirm submission.</strong><br>
+            Once submitted, you can continue; blockchain finalization happens behind the scenes.
+        </div>
+    </div>
+</div>
+
+<script>
+    // Configuration
+    const POLL_INTERVAL_MS = 250;  // Poll every 250ms
+    const TIMEOUT_MS = 60000;      // 60 second timeout
+    const STATUS_URL = "{{ url_for('status') }}";
+
+    // State
+    let pollTimer = null;
+    let startTime = Date.now();
+    let elapsedTimer = null;
+
+    // DOM elements
+    const progressBar = document.getElementById('progress-bar');
+    const progressText = document.getElementById('progress-text');
+    const statusMessage = document.getElementById('status-message');
+    const statusDetails = document.getElementById('status-details');
+    const errorContainer = document.getElementById('error-container');
+    const errorMessage = document.getElementById('error-message');
+    const elapsedTime = document.getElementById('elapsed-time');
+
+    // Status message mapping tuned for async submission (2025-11-21 change)
+    const STATUS_MESSAGES = {
+        'pending': 'Submitting order to blockchain...',
+        'submitted': 'Submission acknowledged; blockchain will finish in the background.',
+        'processing': 'Submitting job for blockchain processing...',
+        'finalizing': 'Finalizing submission...',
+        'completed': 'Submission recorded successfully!',
+        'failed': 'Order submission failed',
+        'timeout': 'Order submission timed out'
+    };
+
+    // Update elapsed time display
+    function updateElapsedTime() {
+        const elapsed = Math.floor((Date.now() - startTime) / 1000);
+        elapsedTime.textContent = `Elapsed time: ${elapsed}s`;
+    }
+
+    // Update progress bar
+    function updateProgress(progress, status) {
+        // Clamp progress between 0-100
+        progress = Math.max(0, Math.min(100, progress));
+
+        progressBar.style.width = progress + '%';
+        progressBar.setAttribute('aria-valuenow', progress);
+        progressText.textContent = progress + '%';
+
+        // Update message
+        const message = STATUS_MESSAGES[status] || 'Processing...';
+        statusMessage.textContent = message;
+
+        // Change color based on status
+        if (status === 'completed' || status === 'submitted') {
+            progressBar.classList.remove('bg-primary');
+            progressBar.classList.add('bg-success');
+            progressBar.classList.remove('progress-bar-animated');
+        } else if (status === 'failed' || status === 'timeout') {
+            progressBar.classList.remove('bg-primary');
+            progressBar.classList.add('bg-danger');
+            progressBar.classList.remove('progress-bar-animated');
+        }
+    }
+
+    // Show error
+    function showError(message) {
+        statusDetails.classList.add('d-none');
+        errorContainer.classList.remove('d-none');
+        errorMessage.textContent = message;
+        stopPolling();
+    }
+
+    // Poll job status
+    async function pollStatus() {
+        try {
+            const response = await fetch(STATUS_URL);
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+
+            // Update progress
+            updateProgress(data.progress, data.status);
+
+            // Check if complete
+            if (data.complete) {
+                stopPolling();
+
+                if (data.error) {
+                    showError(data.message || 'An error occurred during submission.');
+                } else {
+                    // Success - redirect to confirmation
+                    statusDetails.innerHTML = '<div class="alert alert-success mb-0">' +
+                        '<strong>Submission recorded!</strong> Redirecting to confirmation. Blockchain will continue processing without blocking you.</div>';
+
+                    setTimeout(function() {
+                        window.location.href = "{{ url_for('confirmation') }}";
+                    }, 1000);
+                }
+            } else {
+                // Check for timeout
+                const elapsed = Date.now() - startTime;
+                if (elapsed > TIMEOUT_MS) {
+                    showError('Submission timed out after 60 seconds. The blockchain may be busy. Please try again.');
+                    updateProgress(100, 'timeout');
+                }
+            }
+
+        } catch (error) {
+            console.error('Polling error:', error);
+            showError('Failed to check job status: ' + error.message);
+        }
+    }
+
+    // Start polling
+    function startPolling() {
+        console.log('Starting status polling...');
+
+        // Initial poll
+        pollStatus();
+
+        // Set up interval
+        pollTimer = setInterval(pollStatus, POLL_INTERVAL_MS);
+
+        // Set up elapsed time update
+        elapsedTimer = setInterval(updateElapsedTime, 1000);
+    }
+
+    // Stop polling
+    function stopPolling() {
+        if (pollTimer) {
+            clearInterval(pollTimer);
+            pollTimer = null;
+        }
+        if (elapsedTimer) {
+            clearInterval(elapsedTimer);
+            elapsedTimer = null;
+        }
+    }
+
+    // Clean up on page unload
+    window.addEventListener('beforeunload', stopPolling);
+
+    // Start polling when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('Processing page loaded');
+        startPolling();
+    });
+</script>
+{% endblock %}

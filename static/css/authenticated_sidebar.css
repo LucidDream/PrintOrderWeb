@@ -1,0 +1,325 @@
+/* Authenticated Inventory Sidebar Styles */
+
+/* Sidebar Container */
+#live-inventory-sidebar {
+    background-color: #f8f9fa;
+    border-right: 1px solid #dee2e6;
+    height: 100vh;
+    position: sticky;
+    top: 0;
+    overflow-y: auto;
+    scrollbar-width: thin;
+}
+
+#live-inventory-sidebar::-webkit-scrollbar {
+    width: 8px;
+}
+
+#live-inventory-sidebar::-webkit-scrollbar-thumb {
+    background: #6c757d;
+    border-radius: 4px;
+}
+
+/* Printer Configuration Card */
+.printer-config {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.printer-model {
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.printer-details {
+    font-size: 0.75rem;
+    opacity: 0.9;
+}
+
+/* Ink Slot Grid */
+.ink-slots-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+.ink-slot {
+    background: white;
+    border-radius: 6px;
+    padding: 0.5rem;
+    text-align: center;
+    position: relative;
+    border: 2px solid transparent;
+    transition: all 0.2s ease;
+}
+
+.ink-slot:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.ink-slot.verified {
+    border-color: #28a745;
+    background: #f8fff9;
+}
+
+.ink-slot.unverified {
+    border-color: #ffc107;
+    background: #fffef5;
+}
+
+.ink-slot.empty {
+    border-color: #dee2e6;
+    background: #f8f9fa;
+    opacity: 0.6;
+}
+
+.slot-number {
+    font-size: 0.7rem;
+    color: #6c757d;
+    font-weight: 600;
+}
+
+.slot-color {
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin: 0.25rem 0;
+}
+
+.slot-status {
+    font-size: 0.65rem;
+    margin-top: 0.25rem;
+}
+
+.verified-badge {
+    background: #28a745;
+    color: white;
+    padding: 0.125rem 0.5rem;
+    border-radius: 10px;
+    font-size: 0.65rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.unverified-badge {
+    background: #ffc107;
+    color: #000;
+    padding: 0.125rem 0.5rem;
+    border-radius: 10px;
+    font-size: 0.65rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.empty-badge {
+    background: #6c757d;
+    color: white;
+    padding: 0.125rem 0.5rem;
+    border-radius: 10px;
+    font-size: 0.65rem;
+    font-weight: 600;
+}
+
+.blockchain-indicator {
+    width: 8px;
+    height: 8px;
+    background: white;
+    border-radius: 50%;
+    display: inline-block;
+    animation: pulse-blockchain 2s infinite;
+}
+
+@keyframes pulse-blockchain {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+}
+
+/* Alert Box */
+.counterfeit-alert {
+    background: #fff3cd;
+    border: 2px solid #ffc107;
+    border-radius: 8px;
+    padding: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.counterfeit-alert-title {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #856404;
+    margin-bottom: 0.25rem;
+}
+
+.counterfeit-alert-text {
+    font-size: 0.75rem;
+    color: #856404;
+    margin: 0;
+}
+
+/* Consumable Card */
+.consumable-card {
+    transition: all 0.2s ease;
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 0.75rem;
+}
+
+.consumable-card:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    transform: translateY(-2px);
+}
+
+/* Status-based borders */
+.consumable-card[data-status="verified"] {
+    border-left: 5px solid #28a745;
+}
+
+.consumable-card[data-status="unverified"] {
+    border-left: 5px solid #ffc107;
+}
+
+.consumable-card[data-status="empty"] {
+    border-left: 5px solid #6c757d;
+    opacity: 0.6;
+}
+
+.consumable-card img {
+    width: 100%;
+    height: 80px;
+    object-fit: cover;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+/* Ink Color Block (for unverified consumables) */
+.ink-color-block {
+    width: 100%;
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px 4px 0 0;
+    border-bottom: 2px solid rgba(0,0,0,0.1);
+}
+
+.ink-color-name {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #000;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    text-shadow: 0 1px 2px rgba(255,255,255,0.8);
+}
+
+/* Badge styling */
+.status-badge {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    font-size: 9px;
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-weight: 700;
+}
+
+/* Field icons */
+.field-icon {
+    width: 18px;
+    display: inline-block;
+    text-align: center;
+    font-size: 0.85rem;
+}
+
+/* Header styling */
+.sidebar-header {
+    background: white;
+    border-bottom: 2px solid #dee2e6;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+/* Section headers */
+.section-header {
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: #6c757d;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.75rem;
+}
+
+/* Details section */
+.details-content {
+    font-size: 0.75rem;
+    line-height: 1.5;
+}
+
+/* Card content styling */
+.card-name {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #212529;
+    margin-bottom: 0.5rem;
+}
+
+.card-field {
+    font-size: 0.8rem;
+    color: #495057;
+    margin-bottom: 0.25rem;
+    display: flex;
+    align-items: center;
+}
+
+.card-field strong {
+    font-weight: 600;
+}
+
+/* Total cost highlight */
+.total-cost {
+    font-weight: 700;
+    color: #0d6efd;
+    font-size: 0.9rem;
+}
+
+/* Verification status in card */
+.verification-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    background: #f8f9fa;
+    border-top: 1px solid #dee2e6;
+    font-size: 0.75rem;
+}
+
+.verification-status.verified {
+    background: #d4edda;
+    border-top-color: #28a745;
+}
+
+.verification-status.unverified {
+    background: #fff3cd;
+    border-top-color: #ffc107;
+}
+
+/* Responsive */
+@media (max-width: 991px) {
+    #live-inventory-sidebar {
+        position: relative !important;
+        height: auto !important;
+        max-height: 500px;
+        border-right: none;
+        border-bottom: 2px solid #dee2e6;
+    }
+}
