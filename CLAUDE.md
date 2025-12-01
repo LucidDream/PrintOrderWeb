@@ -6,6 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Print Order Web is a Flask web application for blockchain-enabled print job ordering. It provides a browser-based interface for submitting print jobs to a blockchain-based consumable tracking system via ConsumableClient API.
 
+**Repository**: https://github.com/LucidDream/PrintOrderWeb
+
 **Key Architecture**: Dual-mode operation supporting both development (stub) and production (real blockchain via Windows DLL).
 
 ## Shell Environment
