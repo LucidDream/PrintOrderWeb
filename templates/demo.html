@@ -57,7 +57,7 @@
 <!-- Navbar -->
 <div class="demo-navbar">
     <div>
-        <a href="{{ url_for('demo') }}" style="color: white; text-decoration: none;">
+        <a href="{{ url_for('main.demo') }}" style="color: white; text-decoration: none;">
             <h5>{{ _('nav.brand') }}</h5>
             <small>{{ _('nav.subtitle') }}</small>
         </a>
@@ -152,7 +152,7 @@
                             <strong>ℹ️ {{ _('alert.smart_routing') }}</strong> {{ _('alert.smart_routing_message') }}
                         </div>
 
-                        <form action="{{ url_for('upload') }}" method="post" enctype="multipart/form-data">
+                        <form action="{{ url_for('upload.upload') }}" method="post" enctype="multipart/form-data">
                             <div class="mb-3">
                                 <label for="job_name" class="form-label">{{ _('common.job_name') }}</label>
                                 <input type="text" class="form-control" id="job_name" name="job_name"

@@ -36,8 +36,8 @@
                     <h6 class="alert-heading">Submission Error</h6>
                     <p id="error-message" class="mb-2"></p>
                     <div class="mt-3">
-                        <a href="{{ url_for('review') }}" class="btn btn-sm btn-outline-danger">Back to Review</a>
-                        <a href="{{ url_for('upload') }}" class="btn btn-sm btn-outline-secondary">Start Over</a>
+                        <a href="{{ url_for('review.review') }}" class="btn btn-sm btn-outline-danger">Back to Review</a>
+                        <a href="{{ url_for('upload.upload') }}" class="btn btn-sm btn-outline-secondary">Start Over</a>
                     </div>
                 </div>
 
@@ -62,7 +62,7 @@
     // Configuration
     const POLL_INTERVAL_MS = 250;  // Poll every 250ms
     const TIMEOUT_MS = 60000;      // 60 second timeout
-    const STATUS_URL = "{{ url_for('status') }}";
+    const STATUS_URL = "{{ url_for('api.status') }}";
 
     // State
     let pollTimer = null;
@@ -154,7 +154,7 @@
                         '<strong>Submission recorded!</strong> Redirecting to confirmation. Blockchain will continue processing without blocking you.</div>';
 
                     setTimeout(function() {
-                        window.location.href = "{{ url_for('confirmation') }}";
+                        window.location.href = "{{ url_for('confirmation.confirmation') }}";
                     }, 1000);
                 }
             } else {

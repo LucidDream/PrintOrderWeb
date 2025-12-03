@@ -1,7 +1,15 @@
+"""
+Configuration for PrintOrderWeb.
+
+NO STUB MODE - the blockchain API is required.
+Application will fail-fast if DLL cannot be loaded.
+"""
+
 import os
 from pathlib import Path
 
 
+# Base directory (where this file lives)
 BASE_DIR = Path(__file__).resolve().parent
 
 
@@ -17,12 +25,16 @@ class Config:
     SESSION_COOKIE_NAME = "print_order_session"
     ENVIRONMENT = os.environ.get("FLASK_ENV", "development")
 
-    # ConsumableClient API settings
-    ENABLE_API_MODE = os.environ.get("ENABLE_API_MODE", "false").lower() == "true"
+    # ConsumableClient DLL path
+    # Production builds should have DLL in _internal/ folder
+    # Development can point to external location
     CONSUMABLE_DLL_PATH = os.environ.get(
         "CONSUMABLE_DLL_PATH",
-        str(BASE_DIR.parent / "CCAPIv2.0.0.1" / "ConsumableClient.dll")
+        str(BASE_DIR.parent / "CCAPIv2.0.0.2" / "ConsumableClient.dll")
     )
+
+    # Debug mode
+    DEBUG = os.environ.get("FLASK_DEBUG", "1") == "1"
 
 
 class ProductionConfig(Config):
@@ -45,4 +57,3 @@ class TestingConfig(Config):
     """Testing configuration."""
     DEBUG = False
     TESTING = True
-    ENABLE_API_MODE = False  # Use stub for testing by default
