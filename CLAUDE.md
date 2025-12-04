@@ -485,3 +485,21 @@ The following modules were removed as they were replaced by the new architecture
 - `build.ps1` - New PowerShell build script with verification
 - `print_order_web.spec` - Updated to include docs, sample PDFs, and create uploads folder
 - `sample_pdfs/` - Sample PDF files for testing included in build
+
+### Logging Improvements (December 2025)
+
+Reduced log verbosity for the 30-second inventory refresh cycle to prevent log flooding in production:
+
+1. **`core/api_client.py`** - `new_job_template()`
+   - Changed "Template fetched: X accounts" from INFO → DEBUG level
+   - Affects both inventory refresh and job submission template fetch
+
+2. **`services/inventory_service.py`** - `_do_refresh()`
+   - Changed "Inventory refreshed: X toners, Y media options" from INFO → DEBUG level
+   - Errors and recovery messages remain at WARNING/ERROR/INFO levels
+
+3. **`app.py`** - `load_dotenv()` calls
+   - Added `override=True` parameter so `.env` file always takes precedence over shell environment variables
+   - Ensures configuration changes in `.env` take effect without clearing shell environment
+
+**Result**: In production mode (`FLASK_DEBUG=0`), the console remains silent during normal 30-second inventory refreshes. Only errors, warnings, and significant events are logged.

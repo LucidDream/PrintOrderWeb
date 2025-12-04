@@ -171,9 +171,11 @@ class ConsumableAPIClient:
             template = json.loads(json_str)
 
             # Log summary (not full template - it's huge)
+            # Use DEBUG level to avoid filling logs during 30-second inventory refreshes
+            # Job submission still logs important events at INFO level
             wallets = template.get("inventoryParameters", {}).get("wallets", [])
             account_count = sum(len(w.get("accounts", [])) for w in wallets)
-            self._logger.info(
+            self._logger.debug(
                 f"[Thread {self._thread_id}] Template fetched: {account_count} accounts"
             )
 

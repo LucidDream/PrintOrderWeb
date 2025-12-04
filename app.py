@@ -79,12 +79,13 @@ def create_app() -> Flask:
         ServiceUnavailableError: If DLL initialization fails
     """
     # Load .env from base path (next to executable in production)
+    # Use override=True so .env file always takes precedence over shell environment
     base_path = _get_base_path()
     env_file = base_path / '.env'
     if env_file.exists():
-        load_dotenv(env_file)
+        load_dotenv(env_file, override=True)
     else:
-        load_dotenv()  # Default behavior
+        load_dotenv(override=True)  # Default behavior
 
     # Create Flask app
     app = Flask(__name__)

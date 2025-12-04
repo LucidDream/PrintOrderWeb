@@ -287,8 +287,9 @@ class InventoryService:
                 )
             self._consecutive_failures = 0
 
-            # Log summary
-            logger.info(
+            # Log summary at DEBUG level to avoid filling logs every 30 seconds
+            # Errors are still logged at WARNING/ERROR level
+            logger.debug(
                 f"Inventory refreshed: {len(new_snapshot.toner_balances)} toners, "
                 f"{len(new_snapshot.media_options)} media options"
             )
