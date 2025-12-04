@@ -59,7 +59,6 @@ desktop.ini
 
 # Project-specific
 static/uploads/
-*.pdf
 consolelog.txt
 compositelog.txt
 Log.txt
@@ -70,9 +69,9 @@ QUICK_START.txt
 job_payload_sent_to_ledger.json
 job_*.json
 
-# Temporary test files
-CC-Test.zip
-Usersdavidlewissourceprint_order_web.venv/
+# PDFs - ignore uploads but keep sample PDFs
+*.pdf
+!sample_pdfs/*.pdf
 
-# Keep sample PDFs in dist but ignore uploaded ones
-!dist/PrintOrderWeb/sample_pdfs/
+# Temporary test files
+Usersdavidlewissourceprint_order_web.venv/

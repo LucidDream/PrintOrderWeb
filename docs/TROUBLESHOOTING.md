@@ -12,6 +12,7 @@ This guide covers common issues and their solutions when testing Print Order Web
 1. Antivirus is blocking the executable
 2. Missing Visual C++ Redistributables
 3. File corruption during transfer
+4. ConsumableClient.dll not found
 
 **Solutions:**
 
@@ -42,6 +43,13 @@ https://aka.ms/vs/17/release/vc_redist.x64.exe
 Install and restart computer
 ```
 
+**Try 4: Verify DLL Location**
+```
+1. Check that _internal/ConsumableClient.dll exists
+2. Don't move files - keep folder structure intact
+3. Re-extract from ZIP if needed
+```
+
 ---
 
 ## Application Crashes on Startup
@@ -60,9 +68,18 @@ Install and restart computer
 **Cause**: Missing ConsumableClient.dll or wrong location
 **Solution**:
 ```
-1. Verify ConsumableClient.dll is in same folder as PrintOrderWeb.exe
+1. Verify ConsumableClient.dll is in _internal/ folder
 2. Don't move files - keep folder structure intact
 3. Re-extract from ZIP if needed
+```
+
+### "DLLNotFoundError" or "ServiceUnavailableError"
+**Cause**: Application requires the ConsumableClient DLL to start (fail-fast design)
+**Solution**:
+```
+1. Verify ConsumableClient.dll exists in _internal/ folder
+2. Check .env has correct CONSUMABLE_DLL_PATH
+3. For production builds, path should be: _internal/ConsumableClient.dll
 ```
 
 ### "FileNotFoundError: .env"
@@ -82,9 +99,9 @@ Option 1: Stop other application
   - Check Task Manager for other Flask/Python apps
   - Close and try again
 
-Option 2: Change port
-  - Edit app.py (advanced)
-  - Or kill process: taskkill /F /IM flask.exe
+Option 2: Kill the process
+  - taskkill /F /IM python.exe
+  - Or restart your computer
 ```
 
 ---
@@ -105,7 +122,6 @@ Option 2: Change port
 Try these in order:
 1. http://127.0.0.1:5000
 2. http://localhost:5000
-3. http://0.0.0.0:5000
 ```
 
 **Solution 3: Check Firewall**
@@ -129,29 +145,22 @@ Edge: Ctrl+Shift+Delete > Clear
 
 ## API Connection Problems
 
-### Symptom: "⚠️ API Unavailable" warning in sidebar
+### Symptom: Application fails to start with DLL error
 
-**This is EXPECTED in Stub Mode**
-- If `.env` has `ENABLE_API_MODE=false`, this is normal
-- Stub mode intentionally shows empty inventory
-- Switch to real API mode for live data
-
-**If Using Real API Mode (ENABLE_API_MODE=true):**
+The application uses a fail-fast design - the ConsumableClient DLL is required for operation.
 
 **Check 1: DLL Present**
 ```
-1. Verify ConsumableClient.dll exists
-2. Must be in same folder as PrintOrderWeb.exe
-3. File size should be ~500KB-2MB
-4. Don't rename or move it
+1. Verify ConsumableClient.dll exists in _internal/ folder
+2. File size should be several MB
+3. Don't rename or move it
 ```
 
 **Check 2: DLL Path in Config**
 ```
 1. Open .env file
-2. Check: CONSUMABLE_DLL_PATH=./ConsumableClient.dll
-3. Should be relative path
-4. Or use absolute: C:\Path\To\ConsumableClient.dll
+2. For production builds: CONSUMABLE_DLL_PATH=_internal/ConsumableClient.dll
+3. For development: point to your DLL location
 ```
 
 **Check 3: Windows Permissions**
@@ -167,9 +176,8 @@ Edge: Ctrl+Shift+Delete > Clear
 Look for error messages like:
   - "DLL not found"
   - "Failed to initialize API"
-  - "Not implemented"
-
-If "Not implemented": Blockchain/network issue, not app issue
+  - "DLLNotFoundError"
+  - "ServiceUnavailableError"
 ```
 
 ---
@@ -180,12 +188,12 @@ If "Not implemented": Blockchain/network issue, not app issue
 
 **Error: "Insufficient inventory"**
 ```
-Cause: Not enough consumables
+Cause: Not enough consumables available
 Solution:
   1. This is CORRECT behavior
   2. Reduce quantity
-  3. Or check real inventory levels
-  4. In stub mode, inventory is empty by design
+  3. Check inventory levels in sidebar
+  4. Wait for inventory to be replenished
 ```
 
 **Error: "Timeout after 60 seconds"**
@@ -215,9 +223,8 @@ Solution:
 Cause: ConsumableClient.dll issue
 Solution:
   1. Restart application
-  2. Try stub mode first
-  3. Check DLL is correct version (v2.0.0.1)
-  4. May be temporary blockchain issue
+  2. Check DLL is present and accessible
+  3. May be temporary blockchain issue
 ```
 
 ---
@@ -231,7 +238,7 @@ Solution:
 1. Only PDF files supported
 2. Check file extension is .pdf (not .PDF.pdf)
 3. File must be valid PDF (not renamed Word doc)
-4. Try sample PDFs first to isolate issue
+4. Try a different PDF to isolate issue
 ```
 
 ### Symptom: Upload hangs or times out
@@ -252,8 +259,7 @@ Solution:
 1. PDF may be corrupted
 2. PDF may be password-protected
 3. PDF may have unusual formatting
-4. Try sample PDFs to verify app works
-5. Try different PDF
+4. Try different PDF
 ```
 
 ---
@@ -270,19 +276,14 @@ Solution:
 4. Check console for 404 errors (missing CSS/JS)
 ```
 
-### Symptom: Inventory sidebar empty
+### Symptom: Inventory sidebar empty or shows error
 
-**If in Stub Mode:**
+**Solution:**
 ```
-This is EXPECTED - stub returns no data
-Switch to ENABLE_API_MODE=true for real data
-```
-
-**If in Real API Mode:**
-```
-1. Check "API Unavailable" warning
-2. See API Connection Problems section above
-3. Refresh sidebar (auto-refreshes every 30s)
+1. Check console for API errors
+2. Verify DLL is properly loaded
+3. Refresh page - sidebar auto-refreshes every 30 seconds
+4. Restart application if issue persists
 ```
 
 ### Symptom: Estimates show 0.0 for all inks
@@ -311,7 +312,6 @@ Switch to ENABLE_API_MODE=true for real data
 
 **Check 2: Network Issues**
 ```
-If using Real API Mode:
 1. Blockchain calls can be slow
 2. First call always slower (initialization)
 3. 30-second cache reduces subsequent calls
@@ -334,13 +334,21 @@ If using Real API Mode:
 **Cause**: PyInstaller bundle incomplete
 **Solution**: Re-extract from ZIP, don't copy individual files
 
+### "DLLNotFoundError"
+**Cause**: ConsumableClient.dll not found at configured path
+**Solution**: Verify DLL exists in _internal/ folder, check .env path
+
+### "ServiceUnavailableError"
+**Cause**: DLL found but failed to initialize
+**Solution**: Check DLL is not corrupted, try re-extracting from ZIP
+
 ### "Template not found"
 **Cause**: Missing templates folder
 **Solution**: Keep folder structure intact, don't move files
 
 ### "Static file not found (404)"
 **Cause**: Missing static assets
-**Solution**: Ensure static/ folder is present
+**Solution**: Ensure _internal/static/ folder is present
 
 ### "Session expired, please refresh"
 **Cause**: Browser session timed out
@@ -366,22 +374,16 @@ If using Real API Mode:
 - Not written to disk
 
 **Uploaded PDFs:**
-- Temporarily stored in uploads/ folder
-- Deleted after session ends
-- Not transmitted anywhere except analysis
+- Temporarily stored in _internal/static/uploads/ folder
+- Can be cleared manually
+- Not transmitted anywhere except local analysis
 
 **Configuration:**
 - Stored in .env file (plain text)
 - Contains no sensitive data by default
-- Keep blockchain keys secure if added
 
 ### Is data sent to external servers?
 
-**Stub Mode:**
-- No external connections
-- Everything runs locally
-
-**Real API Mode:**
 - ConsumableClient.dll connects to blockchain
 - PDF file stays local (not uploaded)
 - Only transaction data sent to blockchain
@@ -397,39 +399,37 @@ When you find a bug, please include:
 1. **Steps to reproduce**: Exact sequence of actions
 2. **Expected result**: What should happen
 3. **Actual result**: What actually happened
-4. **Mode**: Stub or Real API
-5. **Browser**: Name and version
-6. **PDF**: Which file (or "custom")
+4. **Browser**: Name and version
+5. **PDF**: Which file (or "custom")
 
 ### Helpful Information
-7. **Console logs**: Copy from black window
-8. **Screenshot**: If UI issue
-9. **Error message**: Exact text
-10. **Frequency**: Always, sometimes, once
+6. **Console logs**: Copy from black window
+7. **Screenshot**: If UI issue
+8. **Error message**: Exact text
+9. **Frequency**: Always, sometimes, once
 
 ### Example Bug Report
 ```
 ISSUE: Order submission hangs at 75%
 
 STEPS:
-1. Uploaded business_card.pdf
+1. Uploaded test.pdf
 2. Set quantity to 100
-3. Selected ProMatte A4
+3. Selected media type
 4. Clicked Submit
 5. Progress bar stuck at 75% for 5+ minutes
 
 EXPECTED: Order completes in ~30 seconds
 ACTUAL: Hangs indefinitely at 75%
 
-MODE: Real API (ENABLE_API_MODE=true)
 BROWSER: Chrome 120.0.6099.129
-PDF: sample_pdfs/business_card.pdf
+PDF: A4 single-page document
 FREQUENCY: Happened 3/3 times
 
 CONSOLE OUTPUT:
-[2025-11-13 10:15:32] Submitting job to blockchain
-[2025-11-13 10:15:33] Job handle: 12345
-[2025-11-13 10:15:35] Polling status...
+[2025-12-04 10:15:32] Submitting job to blockchain
+[2025-12-04 10:15:33] Job handle: 12345
+[2025-12-04 10:15:35] Polling status...
 [ERROR] Timeout waiting for job completion
 
 SCREENSHOT: [attached]
@@ -474,16 +474,6 @@ View with: Notepad
 5. Look for 404, 500 errors
 ```
 
-### Manual DLL Testing
-
-**Test ConsumableClient.dll:**
-```python
-# In Python console (if installed)
-import ctypes
-dll = ctypes.CDLL('./ConsumableClient.dll')
-print("DLL loaded successfully")
-```
-
 ---
 
 ## Still Having Issues?
@@ -492,8 +482,8 @@ If this guide doesn't solve your problem:
 
 1. **Check README_TESTER.md**: May have additional info
 2. **Review Console Logs**: Often reveals root cause
-3. **Try Sample PDFs**: Isolate whether issue is with your PDF
-4. **Test in Stub Mode**: Isolate whether issue is blockchain-related
+3. **Try Different PDF**: Isolate whether issue is with your PDF
+4. **Restart Application**: Clears any transient state
 5. **Contact Support**: Provide all information from "Reporting Bugs"
 
 ---
@@ -511,4 +501,4 @@ If this guide doesn't solve your problem:
 
 ---
 
-**Last Updated**: November 2025
+**Last Updated**: December 2025

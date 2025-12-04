@@ -1,23 +1,28 @@
 # -*- mode: python ; coding: utf-8 -*-
-# PyInstaller spec file for Print Order Web - Production Build (Refactored)
+# PyInstaller spec file for Print Order Web - Production Build
 #
 # Build command: pyinstaller --clean --noconfirm print_order_web.spec
 #
 # This creates a one-folder distribution with all dependencies bundled.
-# The ConsumableClient.dll from CCAPIv2.0.0.2 is included for production mode.
+# The ConsumableClient.dll is included from the CCAPIv2.0.0.2 folder.
 #
 # OUTPUT STRUCTURE:
 #   dist/PrintOrderWeb/
-#   ├── PrintOrderWeb.exe      # Main executable
-#   ├── .env                   # Production config (copied from .env.production)
-#   └── _internal/             # All bundled dependencies
+#   ├── PrintOrderWeb.exe          # Main executable
+#   ├── .env                       # Production config (from .env.production)
+#   ├── README_TESTER.md           # Tester documentation
+#   ├── TROUBLESHOOTING.md         # Troubleshooting guide
+#   ├── sample_pdfs/               # Sample PDF files for testing
+#   └── _internal/                 # All bundled dependencies
 #       ├── ConsumableClient.dll
 #       ├── templates/
 #       ├── static/
+#       │   └── uploads/           # Upload folder (created post-build)
+#       ├── translations/
 #       └── ...
 #
 # ARCHITECTURE:
-#   - NO STUB MODE - DLL is required
+#   - FAIL-FAST - DLL is required, no stub mode
 #   - Inventory service runs in background thread
 #   - Job submission uses thread-per-job with complete isolation
 
@@ -29,6 +34,8 @@ from pathlib import Path
 PROJECT_ROOT = Path(SPECPATH)
 DLL_PATH = PROJECT_ROOT.parent / 'CCAPIv2.0.0.2' / 'ConsumableClient.dll'
 ENV_PRODUCTION = PROJECT_ROOT / '.env.production'
+DOCS_PATH = PROJECT_ROOT / 'docs'
+SAMPLE_PDFS_PATH = PROJECT_ROOT / 'sample_pdfs'
 
 # Verify DLL exists
 if not DLL_PATH.exists():
@@ -44,7 +51,7 @@ a = Analysis(
     ['app.py'],
     pathex=[str(PROJECT_ROOT)],
     binaries=[
-        # Include the latest ConsumableClient DLL (v2.0.0.2)
+        # Include the ConsumableClient DLL
         (str(DLL_PATH), '.'),
     ],
     datas=[
@@ -108,7 +115,7 @@ a = Analysis(
         'routes.confirmation',
         'routes.api',
 
-        # Legacy modules (still used)
+        # Helper modules
         'modules',
         'modules.estimator',
         'modules.pdf_analyzer',
@@ -169,16 +176,47 @@ coll = COLLECT(
     name='PrintOrderWeb',
 )
 
-# Post-build: Copy .env.production to dist folder as .env
-# This runs after COLLECT completes
+# Post-build: Copy additional files and create folders
 import atexit
 
-def copy_env_file():
-    """Copy production .env file to dist folder after build."""
+def post_build_setup():
+    """Post-build setup: copy files and create required folders."""
     dist_folder = PROJECT_ROOT / 'dist' / 'PrintOrderWeb'
-    dest_env = dist_folder / '.env'
-    if dist_folder.exists():
-        shutil.copy2(ENV_PRODUCTION, dest_env)
-        print(f"[Post-build] Copied .env.production -> {dest_env}")
 
-atexit.register(copy_env_file)
+    if not dist_folder.exists():
+        return
+
+    # Copy .env.production as .env
+    dest_env = dist_folder / '.env'
+    shutil.copy2(ENV_PRODUCTION, dest_env)
+    print(f"[Post-build] Copied .env.production -> {dest_env}")
+
+    # Copy documentation files
+    readme_tester = DOCS_PATH / 'README_TESTER.md'
+    if readme_tester.exists():
+        shutil.copy2(readme_tester, dist_folder / 'README_TESTER.md')
+        print(f"[Post-build] Copied README_TESTER.md")
+
+    troubleshooting = DOCS_PATH / 'TROUBLESHOOTING.md'
+    if troubleshooting.exists():
+        shutil.copy2(troubleshooting, dist_folder / 'TROUBLESHOOTING.md')
+        print(f"[Post-build] Copied TROUBLESHOOTING.md")
+
+    # Copy sample PDFs folder
+    if SAMPLE_PDFS_PATH.exists():
+        dest_samples = dist_folder / 'sample_pdfs'
+        if dest_samples.exists():
+            shutil.rmtree(dest_samples)
+        shutil.copytree(SAMPLE_PDFS_PATH, dest_samples)
+        print(f"[Post-build] Copied sample_pdfs folder")
+
+    # Create uploads folder
+    uploads_folder = dist_folder / '_internal' / 'static' / 'uploads'
+    uploads_folder.mkdir(parents=True, exist_ok=True)
+    print(f"[Post-build] Created uploads folder: {uploads_folder}")
+
+    # Create a placeholder file in uploads to ensure folder is included
+    placeholder = uploads_folder / '.gitkeep'
+    placeholder.touch()
+
+atexit.register(post_build_setup)

@@ -100,12 +100,13 @@ print_order_web/
 │   ├── confirmation.py       # Results display + /start-over
 │   └── api.py                # AJAX endpoints (/status, /sidebar_refresh)
 │
-├── modules/                  # Legacy helpers (still used)
-│   ├── estimator.py          # Toner/media estimation
-│   ├── pdf_analyzer.py       # PDF analysis
-│   ├── printer_config.py     # Printer slot mapping
+├── modules/                  # Helper modules
 │   ├── consumable_details.py # Metadata extraction
-│   └── i18n.py               # Translation support
+│   ├── estimator.py          # Toner/media estimation
+│   ├── i18n.py               # Translation support
+│   ├── image_defaults.py     # Default images for consumables
+│   ├── pdf_analyzer.py       # PDF analysis
+│   └── printer_config.py     # Printer slot mapping
 │
 └── templates/                # Jinja2 templates (unchanged)
 ```
@@ -215,10 +216,9 @@ Memory: All API-returned strings must be freed via ld3s_free(ctx, ptr)
 
 ## Testing Notes
 
-- **Tests are outdated**: Test files need updating for new architecture
 - Application requires real DLL for operation
-- Test real blockchain integration via running Flask app, not pytest
-- Legacy test files in `tests/` need migration to new structure
+- Test real blockchain integration via running Flask app
+- Sample PDFs available in `sample_pdfs/` folder for testing
 
 ## Building Production Executable
 
@@ -226,27 +226,39 @@ Memory: All API-returned strings must be freed via ld3s_free(ctx, ptr)
 # Install PyInstaller (if not already installed)
 pip install pyinstaller
 
-# Build production executable
+# Option 1: Use the build script (recommended)
+.\build.ps1 -Clean
+
+# Option 2: Direct PyInstaller command
 pyinstaller --clean --noconfirm print_order_web.spec
 
-# Output location
-# dist/PrintOrderWeb/PrintOrderWeb.exe
+# Output location: dist/PrintOrderWeb/
 ```
 
 **Build output structure:**
 ```
 dist/PrintOrderWeb/
 ├── PrintOrderWeb.exe          # Main executable
-├── .env                       # Production config
+├── .env                       # Production config (from .env.production)
+├── README_TESTER.md           # Tester documentation
+├── TROUBLESHOOTING.md         # Troubleshooting guide
+├── sample_pdfs/               # Sample PDF files for testing
+│   ├── sample_test_page.pdf
+│   └── README.txt
 └── _internal/
-    ├── ConsumableClient.dll   # Latest DLL (v2.0.0.2)
+    ├── ConsumableClient.dll   # Blockchain API DLL
     ├── templates/             # Flask HTML templates
     ├── static/                # CSS, JS, images
+    │   └── uploads/           # PDF upload folder (created by build)
     ├── translations/          # i18n (EN/DE)
     └── [Python runtime + deps]
 ```
 
-**Current DLL version:** v2.0.0.2 (as of December 2025)
+**To create a ZIP for distribution:**
+```powershell
+cd dist
+Compress-Archive -Path PrintOrderWeb -DestinationPath PrintOrderWeb-v1.0-Beta.zip
+```
 
 ## Code Style
 
@@ -300,7 +312,7 @@ print_order_web/
 ├── models/             - Immutable data (FrozenOrder, InventorySnapshot)
 ├── services/           - InventoryService, JobService (separate threads)
 ├── routes/             - Flask blueprints (7 modules)
-└── modules/            - Legacy helpers (estimator, etc.)
+└── modules/            - Helper modules (estimator, i18n, etc.)
 ```
 
 ### Key Architectural Changes
@@ -445,3 +457,31 @@ Display names should use:
 ```python
 project_data.get("Consumable Name") or project_data.get("ProductName") or fallback
 ```
+
+## Project Cleanup (December 2025)
+
+### Removed Legacy Modules
+The following modules were removed as they were replaced by the new architecture:
+- `modules/api_client_threaded.py` → replaced by `core/api_client.py`
+- `modules/inventory_threaded.py` → replaced by `services/inventory_service.py`
+- `modules/job_processor.py` → replaced by `services/job_service.py`
+
+### Removed Extraneous Files
+- `app_old.py` - Old monolithic version
+- `instructions.txt` - Developer notes
+- `fetch_template.py`, `test_template_structure.py` - Dev scripts
+- `UI_MOCKUP*.html` (5 files) - Design mockups
+- `CC-Test/` folder and `CC-Test.zip` - Test artifacts
+- `docs/archive/` - Old session summaries
+- Orphaned `consolelog.txt`, `nul` files
+
+### Documentation Updates
+- All documentation updated to remove stub mode references
+- Version references generalized (DLL version folder may vary)
+- README.md, README_TESTER.md, TROUBLESHOOTING.md all aligned with fail-fast architecture
+- DELIVERY_INSTRUCTIONS.md updated with correct paths and structure
+
+### Build Enhancements
+- `build.ps1` - New PowerShell build script with verification
+- `print_order_web.spec` - Updated to include docs, sample PDFs, and create uploads folder
+- `sample_pdfs/` - Sample PDF files for testing included in build

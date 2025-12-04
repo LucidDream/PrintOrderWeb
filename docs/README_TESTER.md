@@ -1,7 +1,7 @@
 # Print Order Web - Tester Guide
 
 **Version**: 1.0 (Beta Test Package)
-**Date**: November 2025
+**Date**: December 2025
 **Platform**: Windows 10/11 (64-bit)
 
 ---
@@ -10,14 +10,15 @@
 
 Print Order Web is a browser-based application for submitting print jobs to a blockchain-enabled consumable tracking system. This test package allows you to evaluate the application's functionality and user experience.
 
+**Architecture**: The application uses a fail-fast design that requires the ConsumableClient DLL for operation. There is no offline/demo mode - the blockchain API must be available.
+
 ---
 
 ## Quick Start (3 Steps)
 
 ### Step 1: Configure
 1. Copy `.env.example` to `.env` (in the same folder as `PrintOrderWeb.exe`)
-2. Edit `.env` with Notepad
-3. Set `ENABLE_API_MODE=true` for real blockchain testing (or leave as `false` for demo mode)
+2. Edit `.env` with Notepad if needed (defaults should work)
 
 ### Step 2: Run
 Double-click `PrintOrderWeb.exe`
@@ -33,29 +34,12 @@ Open your web browser and go to: **http://127.0.0.1:5000**
 
 ---
 
-## Two Testing Modes
-
-### Stub Mode (Demo/Offline)
-- **Setting**: `ENABLE_API_MODE=false` in `.env`
-- **What it does**: Simulates blockchain operations without actual transactions
-- **Use when**: Testing UI/UX, no blockchain access needed
-- **Inventory**: Shows empty inventory (design choice to force real API use)
-
-### Real API Mode (Live Blockchain)
-- **Setting**: `ENABLE_API_MODE=true` in `.env`
-- **What it does**: Connects to actual blockchain, submits real transactions
-- **Use when**: Full integration testing
-- **Requires**: ConsumableClient.dll (included) and blockchain access
-- **Inventory**: Shows live consumable balances from blockchain
-
----
-
 ## Testing Workflow
 
 ### 1. Upload a PDF
 - Go to http://127.0.0.1:5000
 - Click "Upload PDF" or drag a PDF file
-- Sample PDFs are provided in `sample_pdfs/` folder
+- Use any PDF file for testing
 
 ### 2. Enter Job Details
 - **Quantity**: How many copies (limited by available media)
@@ -66,17 +50,15 @@ Open your web browser and go to: **http://127.0.0.1:5000**
 ### 3. Review Estimates
 - Check consumable usage estimates
 - Verify inventory is sufficient
-- Review AI reasoning (if available)
 
 ### 4. Submit Order
 - Click "Submit Print Order"
-- Watch real-time progress updates
-- Wait for blockchain confirmation (~15-30 seconds)
+- The job is submitted to the blockchain for processing
+- Updated balances will reflect in the inventory sidebar
 
 ### 5. Confirmation
-- View transaction IDs
-- Check updated inventory balances
-- Download receipt (optional)
+- View submission confirmation
+- Start a new order if needed
 
 ---
 
@@ -84,13 +66,12 @@ Open your web browser and go to: **http://127.0.0.1:5000**
 
 ### Core Functionality
 - [ ] PDF upload works smoothly
-- [ ] Inventory displays correctly
-- [ ] Quantity limits are enforced
+- [ ] Inventory displays correctly in sidebar
+- [ ] Quantity limits are enforced based on inventory
 - [ ] Estimates calculate accurately
 - [ ] Order submission succeeds
-- [ ] Progress updates appear
-- [ ] Confirmation page shows all details
-- [ ] Updated inventory reflects changes
+- [ ] Confirmation page displays properly
+- [ ] "Start New Order" returns to beginning
 
 ### User Experience
 - [ ] Instructions are clear
@@ -98,12 +79,10 @@ Open your web browser and go to: **http://127.0.0.1:5000**
 - [ ] Error messages are helpful
 - [ ] Loading states are visible
 - [ ] Forms validate properly
-- [ ] Mobile responsiveness (test on phone/tablet)
 
 ### Edge Cases
 - [ ] What happens with very large PDFs?
 - [ ] What if quantity exceeds inventory?
-- [ ] What if API is unavailable?
 - [ ] What if network is slow?
 - [ ] Can you submit multiple orders in sequence?
 
@@ -112,29 +91,28 @@ Open your web browser and go to: **http://127.0.0.1:5000**
 ## Known Issues
 
 ### Expected Behaviors (Not Bugs)
-1. **Stub mode shows empty inventory**: By design - forces use of real API for actual data
-2. **Console window stays open**: Shows logs for debugging
-3. **First load may be slow**: Flask is initializing
-4. **Antivirus warnings**: May occur with PyInstaller executables (app is safe)
+1. **Console window stays open**: Shows logs for debugging
+2. **First load may be slow**: Flask and DLL are initializing
+3. **Antivirus warnings**: May occur with PyInstaller executables (app is safe)
 
 ### Current Limitations
 1. **Windows only**: ConsumableClient.dll is Windows-specific
-2. **Single user**: No multi-user session management yet
-3. **No job history**: Orders not saved to database (future feature)
-4. **Limited printer configs**: Currently supports Roland TrueVIS VG3-640
+2. **Single user**: No multi-user session management
+3. **No job history**: Orders not saved between sessions
+4. **DLL required**: Application will not start without the ConsumableClient DLL
 
 ---
 
 ## Troubleshooting
 
+### Application won't start
+**Solution**:
+1. Verify `ConsumableClient.dll` is in the `_internal/` folder
+2. Check for antivirus blocking the executable
+3. Run as Administrator if needed
+
 ### "Module not found" errors
 **Solution**: Restart the application. If persists, see TROUBLESHOOTING.md
-
-### "API unavailable" warning
-**Solution**:
-1. Check `.env` has `ENABLE_API_MODE=true`
-2. Verify `ConsumableClient.dll` is in the same folder
-3. Try stub mode first: `ENABLE_API_MODE=false`
 
 ### Browser shows "Connection refused"
 **Solution**:
@@ -144,15 +122,14 @@ Open your web browser and go to: **http://127.0.0.1:5000**
 
 ### Order submission times out
 **Solution**:
-1. This can happen with real blockchain (network delays)
+1. This can happen with blockchain network delays
 2. Check your internet connection
 3. Try again - blockchain may be busy
 
 ### "Insufficient inventory" error
 **Solution**:
 1. This is correct behavior when not enough consumables
-2. Reduce quantity or check real inventory balances
-3. In stub mode, inventory is empty by design
+2. Reduce quantity or wait for inventory to be replenished
 
 ---
 
@@ -164,10 +141,9 @@ When reporting issues, please include:
 2. **Expected behavior**: What should happen?
 3. **Actual behavior**: What actually happened?
 4. **Screenshots**: If applicable
-5. **Mode**: Stub or Real API?
-6. **Console logs**: Copy from the black console window
-7. **Browser**: Chrome, Firefox, Edge, etc.
-8. **PDF used**: Which test file or your own?
+5. **Console logs**: Copy from the black console window
+6. **Browser**: Chrome, Firefox, Edge, etc.
+7. **PDF used**: Describe the file
 
 ### Feedback Template
 ```
@@ -181,9 +157,8 @@ Steps:
 Expected: [What should happen]
 Actual: [What actually happened]
 
-Mode: [Stub / Real API]
 Browser: [Chrome 120 / Firefox 121 / etc.]
-PDF: [sample_pdfs/business_card.pdf]
+PDF: [Description of file used]
 
 Console output:
 [Paste relevant logs here]
@@ -198,16 +173,15 @@ Screenshot: [Attach if helpful]
 ```
 PrintOrderWeb/
 ├── PrintOrderWeb.exe          Main application
-├── ConsumableClient.dll       Blockchain API library
-├── .env.example               Configuration template
+├── .env                       Configuration (copied from .env.example)
+├── _internal/                 Bundled dependencies
+│   ├── ConsumableClient.dll   Blockchain API library
+│   ├── templates/             Web UI templates
+│   ├── static/                CSS/JS assets
+│   │   └── uploads/           PDF upload folder
+│   └── translations/          Language files (EN/DE)
 ├── README_TESTER.md           This file
-├── QUICK_START.txt            3-step quick reference
-├── TROUBLESHOOTING.md         Detailed problem solving
-├── sample_pdfs/               Test PDF files
-│   ├── business_card.pdf
-│   └── brochure.pdf
-├── templates/                 Web UI templates (bundled)
-└── static/                    CSS/JS assets (bundled)
+└── TROUBLESHOOTING.md         Detailed problem solving
 ```
 
 ---
@@ -215,10 +189,15 @@ PrintOrderWeb/
 ## Technical Details
 
 ### Stack
-- **Backend**: Flask (Python 3.11)
-- **Blockchain**: ConsumableClient API v2.0.0.1
+- **Backend**: Flask (Python 3.11+)
+- **Blockchain**: ConsumableClient API
 - **Frontend**: Bootstrap 5, vanilla JavaScript
 - **PDF Analysis**: PyPDF library
+
+### Architecture
+- **Thread-per-job**: Each job submission runs in its own thread
+- **Background inventory**: Refreshes every 30 seconds
+- **Fail-fast**: Application requires DLL to start
 
 ### Network
 - **Local only**: App runs on your computer (127.0.0.1)
@@ -253,31 +232,25 @@ Before reporting "everything works":
 **Basic Flow**
 - [ ] Application launches without errors
 - [ ] Web interface loads in browser
+- [ ] Inventory sidebar shows consumable balances
 - [ ] Can upload a PDF file
 - [ ] Can configure order settings
 - [ ] Can submit an order
 - [ ] Confirmation page shows results
 
-**Real API Mode**
-- [ ] Inventory shows real balances
-- [ ] Order submits to blockchain
-- [ ] Transaction IDs appear
-- [ ] Inventory updates after submission
-
 **User Experience**
 - [ ] Forms are intuitive
 - [ ] Error messages are helpful
-- [ ] Progress indicators work
+- [ ] Sidebar updates after submission
 - [ ] Mobile view is usable
 
 **Edge Cases**
 - [ ] Handles insufficient inventory
 - [ ] Validates quantity limits
 - [ ] Shows errors gracefully
-- [ ] Recovers from API failures
 
 ---
 
-**Thank you for testing!** 🎉
+**Thank you for testing!**
 
 Your feedback helps make this application better for everyone.
