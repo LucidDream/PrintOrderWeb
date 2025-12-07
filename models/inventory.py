@@ -12,9 +12,127 @@ Thread Safety:
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Dict, Any, List, Optional
+
+# Reverse geocoder for converting coordinates to location names
+try:
+    import reverse_geocoder as rg
+    REVERSE_GEOCODER_AVAILABLE = True
+except ImportError:
+    REVERSE_GEOCODER_AVAILABLE = False
+
+logger = logging.getLogger(__name__)
+
+
+@dataclass(frozen=True)
+class LocationData:
+    """
+    Geographic location data for a consumable.
+
+    Optional field - may or may not be present on any given account.
+    Used to track where consumables were registered/created.
+    """
+
+    latitude: float
+    """North/South coordinate."""
+
+    longitude: float
+    """East/West coordinate."""
+
+    accuracy: str
+    """Precision level (e.g., 'city', 'gps')."""
+
+    timestamp: str
+    """ISO 8601 timestamp when location was recorded."""
+
+    # Reverse-geocoded display fields
+    city: str = ""
+    """City name (e.g., 'Nashville')."""
+
+    region: str = ""
+    """Region/state code (e.g., 'TN')."""
+
+    country: str = ""
+    """Country code ISO 3166-1 alpha-2 (e.g., 'US')."""
+
+    @property
+    def display_name(self) -> str:
+        """Formatted location string for UI display (e.g., 'Nashville, TN, US')."""
+        if self.city and self.region and self.country:
+            return f"{self.city}, {self.region}, {self.country}"
+        elif self.city and self.country:
+            return f"{self.city}, {self.country}"
+        elif self.country:
+            return self.country
+        return ""
+
+    @property
+    def recorded_date(self) -> str:
+        """Formatted date string from timestamp (e.g., 'Dec 7, 2025')."""
+        try:
+            dt = datetime.fromisoformat(self.timestamp.replace('Z', '+00:00'))
+            return dt.strftime("%b %d, %Y")
+        except (ValueError, AttributeError):
+            return self.timestamp
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary for template rendering."""
+        return {
+            "latitude": self.latitude,
+            "longitude": self.longitude,
+            "accuracy": self.accuracy,
+            "timestamp": self.timestamp,
+            "city": self.city,
+            "region": self.region,
+            "country": self.country,
+            "display_name": self.display_name,
+            "recorded_date": self.recorded_date,
+        }
+
+    @classmethod
+    def from_api_data(cls, location_data: Dict[str, Any]) -> "LocationData":
+        """
+        Create LocationData from API response, with reverse geocoding.
+
+        Args:
+            location_data: The locationData dict from account.metadata
+
+        Returns:
+            LocationData with geocoded city/region/country if available
+        """
+        latitude = location_data.get("latitude", 0.0)
+        longitude = location_data.get("longitude", 0.0)
+        accuracy = location_data.get("accuracy", "")
+        timestamp = location_data.get("timestamp", "")
+
+        # Attempt reverse geocoding
+        city = ""
+        region = ""
+        country = ""
+
+        if REVERSE_GEOCODER_AVAILABLE and latitude and longitude:
+            try:
+                results = rg.search([(latitude, longitude)], verbose=False)
+                if results and len(results) > 0:
+                    result = results[0]
+                    city = result.get("name", "")
+                    region = result.get("admin1", "")  # State/province code
+                    country = result.get("cc", "")  # ISO 3166-1 alpha-2
+            except Exception as e:
+                logger.warning(f"Reverse geocoding failed for ({latitude}, {longitude}): {e}")
+
+        return cls(
+            latitude=latitude,
+            longitude=longitude,
+            accuracy=accuracy,
+            timestamp=timestamp,
+            city=city,
+            region=region,
+            country=country,
+        )
 
 
 @dataclass(frozen=True)
@@ -50,9 +168,17 @@ class TonerBalance:
     tax_rate: float = 0.0
     """Tax rate percentage."""
 
+    location: Optional[LocationData] = None
+    """Geographic location data (optional - may not be present)."""
+
+    @property
+    def has_location(self) -> bool:
+        """Whether this toner has location data."""
+        return self.location is not None and bool(self.location.display_name)
+
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for template rendering."""
-        return {
+        result = {
             "color": self.color,
             "balance_ml": self.balance_ml,
             "mintId": self.mint_id,
@@ -61,7 +187,11 @@ class TonerBalance:
             "product_name": self.product_name,
             "price": self.price,
             "tax_rate": self.tax_rate,
+            "has_location": self.has_location,
         }
+        if self.location:
+            result["location"] = self.location.to_dict()
+        return result
 
 
 @dataclass(frozen=True)
@@ -100,9 +230,17 @@ class MediaOption:
     tax_rate: float = 0.0
     """Tax rate percentage."""
 
+    location: Optional[LocationData] = None
+    """Geographic location data (optional - may not be present)."""
+
+    @property
+    def has_location(self) -> bool:
+        """Whether this media has location data."""
+        return self.location is not None and bool(self.location.display_name)
+
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for template rendering."""
-        return {
+        result = {
             "mintId": self.mint_id,
             "display_name": self.display_name,
             "balance_sheets": self.balance_sheets,
@@ -112,7 +250,11 @@ class MediaOption:
             "product_name": self.product_name,
             "price": self.price,
             "tax_rate": self.tax_rate,
+            "has_location": self.has_location,
         }
+        if self.location:
+            result["location"] = self.location.to_dict()
+        return result
 
 
 @dataclass(frozen=True)
@@ -241,6 +383,12 @@ class InventorySnapshot:
                 price = float(outer_meta.get("price", 0))
                 tax = float(outer_meta.get("tax", 0))
 
+                # Extract optional location data (at same level as nested metadata)
+                location_data_raw = outer_meta.get("locationData")
+                location = None
+                if location_data_raw:
+                    location = LocationData.from_api_data(location_data_raw)
+
                 inner_meta = outer_meta.get("metadata", {})
                 uom = inner_meta.get("uom", "")
 
@@ -268,6 +416,7 @@ class InventorySnapshot:
                         product_name=product_name,
                         price=price,
                         tax_rate=tax,
+                        location=location,
                     )
                     toner_list.append(toner)
 
@@ -289,6 +438,7 @@ class InventorySnapshot:
                         product_name=display_name,
                         price=price,
                         tax_rate=tax,
+                        location=location,
                     )
                     media_list.append(media)
 

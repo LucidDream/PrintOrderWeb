@@ -419,6 +419,12 @@ template = {
                 "metadata": {
                     "price": "240",
                     "tax": "9",
+                    "locationData": {  # OPTIONAL - see below
+                        "latitude": 36.2,
+                        "longitude": -86.519,
+                        "accuracy": "city",
+                        "timestamp": "2025-12-07T12:29:37Z"
+                    },
                     "metadata": {  # NESTED metadata
                         "uom": "Toner" | "Media",
                         "tokenDescription": {
@@ -435,6 +441,33 @@ template = {
         }]
     }
 }
+```
+
+### Optional locationData Field
+
+The `locationData` field is an **optional** field that may or may not be present on any given account. When present, it contains geographic coordinates for the consumable.
+
+**Path**: `account.metadata.locationData`
+
+**Structure**:
+```python
+"locationData": {
+    "latitude": 36.2,           # float - North/South coordinate
+    "longitude": -86.519,       # float - East/West coordinate
+    "accuracy": "city",         # string - Precision level (e.g., "city", "gps")
+    "timestamp": "2025-12-07T12:29:37Z"  # ISO 8601 timestamp when location was recorded
+}
+```
+
+**Notes**:
+- This field is at the same level as the nested `metadata` object, NOT inside `projectData`
+- Not all consumables will have this field - always check for its existence before accessing
+- The `accuracy` field indicates the precision of the coordinates
+- Currently NOT extracted by `InventorySnapshot.from_template()` but is available in `raw_template`
+- Use `template-diagnostic.py` script to inspect the full API response for any new fields
+
+**Diagnostic Tool**:
+Run `python template-diagnostic.py` to dump the complete API response to `template-diagnostic-output.json` for inspection.
 
 # Job status from ld3s_get_job_status()
 status = {
@@ -503,3 +536,58 @@ Reduced log verbosity for the 30-second inventory refresh cycle to prevent log f
    - Ensures configuration changes in `.env` take effect without clearing shell environment
 
 **Result**: In production mode (`FLASK_DEBUG=0`), the console remains silent during normal 30-second inventory refreshes. Only errors, warnings, and significant events are logged.
+
+### Location Data Feature (December 2025)
+
+Added support for displaying geographic origin data for consumables. This helps OEMs detect grey market products being used outside their intended geographic regions.
+
+#### New Dependencies
+- `reverse_geocoder` (v1.5.1) - Offline reverse geocoding to convert coordinates to city/region/country
+
+#### Data Model Changes
+
+**New `LocationData` class** (`models/inventory.py`):
+```python
+@dataclass(frozen=True)
+class LocationData:
+    latitude: float
+    longitude: float
+    accuracy: str          # e.g., "city", "gps"
+    timestamp: str         # ISO 8601 format
+    city: str              # Reverse-geocoded city name
+    region: str            # State/province code
+    country: str           # ISO 3166-1 alpha-2 country code
+```
+
+- Added `location: Optional[LocationData]` field to `TonerBalance` and `MediaOption`
+- Added `has_location` property for easy template checks
+- Location data extracted from `account.metadata.locationData` path in API response
+
+#### UI Changes
+
+**Sidebar badge enhancement**:
+- Consumables with location data show `✓ VERIFIED 📌` badge
+- Badge size increased 25% for better visibility (font-size: 9px → 11px, padding adjusted)
+
+**Expanded details section**:
+- When location present, shows "Origin Location" and "Recorded" at top of details
+- Format: "City, Region, CountryCode" (e.g., "Mount Juliet, Tennessee, US")
+- Fields hidden when location data not present (graceful degradation)
+
+#### Files Modified
+- `requirements.txt` - Added reverse_geocoder dependency
+- `models/inventory.py` - New LocationData class, location fields on TonerBalance/MediaOption
+- `modules/consumable_details.py` - Extract and display origin_location and recorded fields
+- `templates/partials/authenticated_sidebar.html` - Badge icon and hidden field filtering
+- `static/css/authenticated_sidebar.css` - Larger badge styling
+- `translations/en.json` - Added "Origin Location" and "Recorded" labels
+- `translations/de.json` - Added German translations
+
+#### Diagnostic Tool
+
+**`template-diagnostic.py`** - Standalone script to inspect raw API response:
+```bash
+python template-diagnostic.py
+# Output: template-diagnostic-output.json (pretty-printed API response)
+```
+Use this to verify what fields the DLL is returning, including locationData.

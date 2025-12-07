@@ -120,7 +120,9 @@
     "surface_energy": "Oberflächenenergie",
     "surface_roughness": "Oberflächenrauheit",
     "heat_tolerance": "Hitzebeständigkeit",
-    "moisture_content": "Feuchtigkeitsgehalt"
+    "moisture_content": "Feuchtigkeitsgehalt",
+    "origin_location": "Herkunftsort",
+    "recorded": "Erfasst"
   },
 
   "demo": {

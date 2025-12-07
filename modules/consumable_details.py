@@ -63,6 +63,10 @@ class ConsumableDetailsExtractor:
 
     # Field priority definitions (lower = more important)
     FIELD_PRIORITIES = {
+        # Location data (highest priority when present)
+        'origin_location': 1,
+        'recorded': 2,
+
         # Toner/Ink characteristics (prioritize ink properties)
         'color': 10,
         'chemistry_base': 15,
@@ -447,7 +451,7 @@ class ConsumableDetailsExtractor:
                 priority=self.FIELD_PRIORITIES.get('part_number', 100)
             ))
 
-        # Extract product image URL (OPTIONAL - may not be present in all tokens)
+        # Extract product image URL (for card display - not shown in details list)
         product_url = project_data.get('url')
         if product_url:
             logger.info(f"  → Extracted product image URL: {product_url}")
@@ -455,11 +459,32 @@ class ConsumableDetailsExtractor:
                 key='product_image_url',
                 label='consumable.product_image',
                 value=product_url,
-                format_type='url',
-                priority=1  # Very high priority - needed for card display
+                format_type='hidden',  # Mark as hidden - used for image display only
+                priority=0  # High priority so it's first in list for easy access
             ))
-        else:
-            logger.info(f"  → No product image URL found in metadata (will use SVG default)")
+
+        # Extract location data (OPTIONAL - at metadata level, not projectData)
+        location_data = metadata.get('locationData')
+        if location_data:
+            # Import here to avoid circular imports
+            from models.inventory import LocationData
+            location = LocationData.from_api_data(location_data)
+            if location.display_name:
+                logger.info(f"  → Extracted origin location: {location.display_name}")
+                fields.append(DetailField(
+                    key='origin_location',
+                    label='consumable.origin_location',
+                    value=location.display_name,
+                    format_type='text',
+                    priority=self.FIELD_PRIORITIES.get('origin_location', 1)
+                ))
+                fields.append(DetailField(
+                    key='recorded',
+                    label='consumable.recorded',
+                    value=location.recorded_date,
+                    format_type='text',
+                    priority=self.FIELD_PRIORITIES.get('recorded', 2)
+                ))
 
         # Sort by priority
         fields.sort(key=lambda f: f.priority)
@@ -774,7 +799,7 @@ class ConsumableDetailsExtractor:
                 priority=self.FIELD_PRIORITIES.get('manufacturer', 100)
             ))
 
-        # Extract product image URL (OPTIONAL - may not be present in all tokens)
+        # Extract product image URL (for card display - not shown in details list)
         product_url = project_data.get('url')
         if product_url:
             logger.info(f"  → Extracted media product image URL: {product_url}")
@@ -782,11 +807,32 @@ class ConsumableDetailsExtractor:
                 key='product_image_url',
                 label='consumable.product_image',
                 value=product_url,
-                format_type='url',
-                priority=1  # Very high priority - needed for card display
+                format_type='hidden',  # Mark as hidden - used for image display only
+                priority=0  # High priority so it's first in list for easy access
             ))
-        else:
-            logger.info(f"  → No product image URL found in media metadata (will use SVG default)")
+
+        # Extract location data (OPTIONAL - at metadata level, not projectData)
+        location_data = metadata.get('locationData')
+        if location_data:
+            # Import here to avoid circular imports
+            from models.inventory import LocationData
+            location = LocationData.from_api_data(location_data)
+            if location.display_name:
+                logger.info(f"  → Extracted media origin location: {location.display_name}")
+                fields.append(DetailField(
+                    key='origin_location',
+                    label='consumable.origin_location',
+                    value=location.display_name,
+                    format_type='text',
+                    priority=self.FIELD_PRIORITIES.get('origin_location', 1)
+                ))
+                fields.append(DetailField(
+                    key='recorded',
+                    label='consumable.recorded',
+                    value=location.recorded_date,
+                    format_type='text',
+                    priority=self.FIELD_PRIORITIES.get('recorded', 2)
+                ))
 
         # Sort by priority
         fields.sort(key=lambda f: f.priority)

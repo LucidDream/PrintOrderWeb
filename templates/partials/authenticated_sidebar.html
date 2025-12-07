@@ -88,17 +88,21 @@
         {% set toner = inventory.toner_balances[slot.account_id] %}
         <div class="consumable-card" data-status="verified">
             <div style="position: relative;">
-                {% set ns = namespace(image_url=None) %}
+                {# Check if this toner has location data #}
+                {% set ns = namespace(image_url=None, has_location=False) %}
                 {% if slot.account_id in toner_details and toner_details[slot.account_id] %}
                     {% for field in toner_details[slot.account_id] %}
                         {% if field['key'] == 'product_image_url' %}
                             {% set ns.image_url = field['value'] %}
                         {% endif %}
+                        {% if field['key'] == 'origin_location' %}
+                            {% set ns.has_location = True %}
+                        {% endif %}
                     {% endfor %}
                 {% endif %}
                 <img src="{{ ns.image_url if ns.image_url else default_images.toner }}"
                      alt="{{ _('colors.' + slot.color_name) }}">
-                <span class="badge bg-success status-badge">✓ {{ _('common.verified') }}</span>
+                <span class="badge bg-success status-badge">✓ {{ _('common.verified') }}{% if ns.has_location %}<span style="margin-left: 4px; font-size: 1.1em;">📌</span>{% endif %}</span>
             </div>
             <div class="p-2">
                 <div class="card-name text-truncate">{{ toner.display }}</div>
@@ -132,6 +136,7 @@
             <div class="collapse" id="details-{{ slot.color_name }}">
                 <div class="p-2 border-top bg-light details-content">
                     {% for field in toner_details[slot.account_id] %}
+                    {% if field['format_type'] != 'hidden' %}
                     <div class="mb-1">
                         <strong>{{ _(field['label']) }}:</strong>
                         {% if field['format_type'] == 'badge' %}
@@ -140,6 +145,7 @@
                         {{ field['value'] }}
                         {% endif %}
                     </div>
+                    {% endif %}
                     {% endfor %}
                 </div>
             </div>
@@ -203,17 +209,21 @@
         {% for media_id, media in inventory.media_options.items() %}
         <div class="consumable-card" data-status="verified">
             <div style="position: relative;">
-                {% set ns = namespace(image_url=None) %}
+                {# Check if this media has location data #}
+                {% set ns = namespace(image_url=None, has_location=False) %}
                 {% if media_id in media_details and media_details[media_id] %}
                     {% for field in media_details[media_id] %}
                         {% if field['key'] == 'product_image_url' %}
                             {% set ns.image_url = field['value'] %}
                         {% endif %}
+                        {% if field['key'] == 'origin_location' %}
+                            {% set ns.has_location = True %}
+                        {% endif %}
                     {% endfor %}
                 {% endif %}
                 <img src="{{ ns.image_url if ns.image_url else default_images.media }}"
                      alt="{{ media.display }}">
-                <span class="badge bg-success status-badge">✓ {{ _('common.verified') }}</span>
+                <span class="badge bg-success status-badge">✓ {{ _('common.verified') }}{% if ns.has_location %}<span style="margin-left: 4px; font-size: 1.1em;">📌</span>{% endif %}</span>
             </div>
             <div class="p-2">
                 <div class="card-name text-truncate">{{ media.display }}</div>
@@ -246,6 +256,7 @@
             <div class="collapse" id="details-media-{{ loop.index }}">
                 <div class="p-2 border-top bg-light details-content">
                     {% for field in media_details[media_id] %}
+                    {% if field['format_type'] != 'hidden' %}
                     <div class="mb-1">
                         <strong>{{ _(field['label']) }}:</strong>
                         {% if field['format_type'] == 'badge' %}
@@ -254,6 +265,7 @@
                         {{ field['value'] }}
                         {% endif %}
                     </div>
+                    {% endif %}
                     {% endfor %}
                 </div>
             </div>
@@ -309,6 +321,7 @@
             <div class="collapse" id="details-unattached-{{ loop.index }}">
                 <div class="p-2 border-top bg-light details-content">
                     {% for field in toner_details[consumable.id] %}
+                    {% if field['format_type'] != 'hidden' %}
                     <div class="mb-1">
                         <strong>{{ _(field['label']) }}:</strong>
                         {% if field['format_type'] == 'badge' %}
@@ -317,6 +330,7 @@
                         {{ field['value'] }}
                         {% endif %}
                     </div>
+                    {% endif %}
                     {% endfor %}
                 </div>
             </div>

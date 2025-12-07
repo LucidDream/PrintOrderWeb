@@ -120,7 +120,9 @@
     "surface_energy": "Surface Energy",
     "surface_roughness": "Surface Roughness",
     "heat_tolerance": "Heat Tolerance",
-    "moisture_content": "Moisture Content"
+    "moisture_content": "Moisture Content",
+    "origin_location": "Origin Location",
+    "recorded": "Recorded"
   },
 
   "demo": {
