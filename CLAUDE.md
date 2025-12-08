@@ -782,3 +782,67 @@ When adding new dependencies:
 3. **Add graceful degradation**: App should work even if feature fails
 4. **Document in CLAUDE.md**: Record any special handling required
 5. **Update .spec file**: Add any data files the library needs
+
+### Issue 4: Browser Auto-Launch Causing Infinite Tabs
+
+**Symptom**:
+- Browser opens endless new tabs every few seconds
+- Each tab attempts to connect to http://127.0.0.1:5000
+- System becomes unresponsive from spawning browser processes
+
+**Root Cause**:
+Similar to the multiprocessing fork bomb, but manifesting through `webbrowser.open()`:
+
+1. **Flask debug reloader**: When `debug=True`, Flask spawns a child process that re-executes `__main__`. Any `webbrowser.open()` call in `__main__` runs twice.
+
+2. **PyInstaller child processes**: Even with `freeze_support()`, if browser code runs before the guard takes effect, or in the wrong location, child processes will open additional tabs.
+
+3. **Code placement matters**: Browser launch code at module level or inside `create_app()` will execute on every import/reload.
+
+**Solution**:
+Place browser launch code inside `if __name__ == "__main__":` with proper guards:
+
+```python
+if __name__ == "__main__":
+    app = create_app()
+    debug_mode = os.environ.get("FLASK_DEBUG", "1") == "1"
+
+    import webbrowser
+    from threading import Timer
+
+    def open_browser():
+        url = "http://127.0.0.1:5000"
+        try:
+            webbrowser.open(url)
+        except Exception:
+            pass  # Graceful degradation
+
+    # WERKZEUG_RUN_MAIN is set to "true" in Flask's reloader CHILD process.
+    # We want to open browser in the CHILD (where the actual server runs),
+    # not the parent (which just monitors for file changes).
+    #
+    # In non-debug mode (production), WERKZEUG_RUN_MAIN is never set,
+    # so we open the browser in the main process.
+    is_reloader_child = os.environ.get("WERKZEUG_RUN_MAIN") == "true"
+    is_production = not debug_mode
+
+    if is_reloader_child or is_production:
+        Timer(1.5, open_browser).start()
+
+    app.run(debug=debug_mode)
+```
+
+**Why This Works**:
+
+| Scenario | WERKZEUG_RUN_MAIN | Browser Opens? |
+|----------|-------------------|----------------|
+| Dev: Parent process (monitors files) | Not set | No |
+| Dev: Reloader child (runs server) | "true" | Yes (once) |
+| Prod: Main process | Not set | Yes (once) |
+| Prod: multiprocessing child | N/A (exits via freeze_support) | No |
+
+**Key Principles**:
+1. Open browser in reloader CHILD (debug) or main process (production)
+2. Use `Timer` to delay - server needs time to bind to port
+3. Place code AFTER `create_app()` but BEFORE `app.run()`
+4. Wrap in try/except for graceful degradation

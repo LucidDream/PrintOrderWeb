@@ -164,6 +164,16 @@ def create_app() -> Flask:
     # SERVICES INITIALIZATION
     # =========================================================================
 
+    # Pre-initialize reverse_geocoder on main thread to avoid blocking
+    # the inventory thread on first use. This loads the geo database (~5 sec)
+    # before starting the inventory service.
+    try:
+        from models.inventory import _init_reverse_geocoder
+        logger.debug("Pre-initializing reverse geocoder...")
+        _init_reverse_geocoder()
+    except Exception as e:
+        logger.warning(f"Reverse geocoder pre-init failed (non-fatal): {e}")
+
     # Create inventory service (starts background thread)
     inventory_service = InventoryService(dll_manager, refresh_interval_seconds=30.0)
     inventory_service.start()
@@ -395,5 +405,53 @@ if __name__ == "__main__":
 
     app = create_app()
     debug_mode = os.environ.get("FLASK_DEBUG", "1") == "1"
+
+    # =========================================================================
+    # AUTO-LAUNCH BROWSER
+    # =========================================================================
+    # Opens the default browser to the app URL after server starts.
+    #
+    # CRITICAL: This code must handle edge cases that cause infinite browser tabs:
+    #
+    # 1. Flask debug reloader (development mode):
+    #    When debug=True, Flask spawns a child process to enable auto-reload.
+    #    The child process re-executes this __main__ block. We detect this via
+    #    WERKZEUG_RUN_MAIN which is set to "true" in the child process.
+    #
+    # 2. PyInstaller multiprocessing (production mode):
+    #    Libraries like scipy spawn child processes that re-execute the script.
+    #    freeze_support() handles this, but we add the WERKZEUG check for safety.
+    #
+    # 3. Server not ready:
+    #    Opening browser immediately would show "connection refused". We use a
+    #    Timer to delay until the server is listening on the port.
+    #
+    # Solution: Only open browser when WERKZEUG_RUN_MAIN is NOT set (parent
+    # process only), and use Timer to delay until server is ready.
+    # =========================================================================
+    import webbrowser
+    from threading import Timer
+
+    def open_browser():
+        """Open browser to app URL. Called once after server starts."""
+        url = "http://127.0.0.1:5000"
+        try:
+            webbrowser.open(url)
+            logger.info(f"Browser opened to {url}")
+        except Exception as e:
+            logger.warning(f"Could not open browser automatically: {e}")
+
+    # WERKZEUG_RUN_MAIN is set to "true" in Flask's reloader CHILD process.
+    # We want to open browser in the CHILD (where the actual server runs),
+    # not the parent (which just monitors for file changes).
+    #
+    # In non-debug mode (production), WERKZEUG_RUN_MAIN is never set,
+    # so we open the browser in the main process.
+    is_reloader_child = os.environ.get("WERKZEUG_RUN_MAIN") == "true"
+    is_production = not debug_mode
+
+    if is_reloader_child or is_production:
+        # Delay 1.5 seconds to ensure Flask server is accepting connections
+        Timer(1.5, open_browser).start()
 
     app.run(debug=debug_mode)

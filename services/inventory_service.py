@@ -260,11 +260,12 @@ class InventoryService:
         Returns:
             True if refresh succeeded, False otherwise
         """
-        logger.debug("Refreshing inventory...")
+        logger.debug("Refreshing inventory - starting...")
 
         try:
             # Create API client for THIS thread
             # Each refresh gets a fresh client - complete isolation
+            logger.debug("Creating API client...")
             api_client = ConsumableAPIClient(
                 context_handle=self._dll_manager.context_handle,
                 library=self._dll_manager.library,
@@ -272,10 +273,13 @@ class InventoryService:
             )
 
             # Fetch fresh template from blockchain
+            logger.debug("Fetching template from blockchain...")
             template = api_client.new_job_template()
+            logger.debug("Template fetched, creating snapshot...")
 
             # Create new immutable snapshot
             new_snapshot = InventorySnapshot.from_template(template)
+            logger.debug("Snapshot created, swapping reference...")
 
             # Atomic reference swap (Python GIL makes this thread-safe)
             self._current_snapshot = new_snapshot

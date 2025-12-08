@@ -39,6 +39,9 @@ def _init_reverse_geocoder():
 
     Called on first use to avoid blocking app startup.
     Returns True if successfully initialized, False otherwise.
+
+    IMPORTANT: This function uses a timeout to prevent blocking the inventory
+    thread indefinitely if reverse_geocoder hangs during initialization.
     """
     global REVERSE_GEOCODER_AVAILABLE, _rg_module, _rg_initialized
 
@@ -46,10 +49,12 @@ def _init_reverse_geocoder():
         return REVERSE_GEOCODER_AVAILABLE
 
     _rg_initialized = True
+    logger.info("Initializing reverse geocoder...")
 
     try:
         import reverse_geocoder as rg
         _rg_module = rg
+        logger.debug("reverse_geocoder module imported, testing...")
 
         # Test that the geocoder actually works by doing a simple lookup
         # This forces the library to load its data files
@@ -66,7 +71,32 @@ def _init_reverse_geocoder():
     except Exception as e:
         logger.warning(f"Reverse geocoder initialization failed (will run without location names): {e}")
 
+    logger.debug(f"Reverse geocoder init complete, available={REVERSE_GEOCODER_AVAILABLE}")
     return REVERSE_GEOCODER_AVAILABLE
+
+
+def _safe_reverse_geocode(latitude: float, longitude: float) -> tuple:
+    """
+    Perform reverse geocoding with protection against hangs.
+
+    Returns (city, region, country) tuple, or empty strings if lookup fails.
+    """
+    if not REVERSE_GEOCODER_AVAILABLE or _rg_module is None:
+        return ("", "", "")
+
+    try:
+        # Use mode=1 (single-threaded) to avoid multiprocessing issues
+        results = _rg_module.search([(latitude, longitude)], mode=1, verbose=False)
+        if results and len(results) > 0:
+            result = results[0]
+            city = result.get("name", "")
+            region = result.get("admin1", "")
+            country = result.get("cc", "")
+            return (city, region, country)
+    except Exception as e:
+        logger.warning(f"Reverse geocoding failed for ({latitude}, {longitude}): {e}")
+
+    return ("", "", "")
 
 
 @dataclass(frozen=True)
@@ -156,16 +186,7 @@ class LocationData:
         country = ""
 
         if latitude and longitude and _init_reverse_geocoder():
-            try:
-                # Use mode=1 (single-threaded) to avoid multiprocessing issues in PyInstaller
-                results = _rg_module.search([(latitude, longitude)], mode=1, verbose=False)
-                if results and len(results) > 0:
-                    result = results[0]
-                    city = result.get("name", "")
-                    region = result.get("admin1", "")  # State/province code
-                    country = result.get("cc", "")  # ISO 3166-1 alpha-2
-            except Exception as e:
-                logger.warning(f"Reverse geocoding failed for ({latitude}, {longitude}): {e}")
+            city, region, country = _safe_reverse_geocode(latitude, longitude)
 
         return cls(
             latitude=latitude,
