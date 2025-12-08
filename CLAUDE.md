@@ -591,3 +591,194 @@ python template-diagnostic.py
 # Output: template-diagnostic-output.json (pretty-printed API response)
 ```
 Use this to verify what fields the DLL is returning, including locationData.
+
+## PyInstaller Build Issues and Solutions (December 2025)
+
+This section documents critical issues encountered when building the production executable with PyInstaller, and their solutions. These learnings are essential for future development.
+
+### Development vs Production Differences
+
+**CRITICAL**: Code that works perfectly in development (`python app.py` or `start.bat`) may fail catastrophically in PyInstaller builds. Always test both environments when making changes that involve:
+- Multiprocessing or threading
+- Dynamic imports
+- File path resolution
+- Libraries with native extensions (scipy, numpy, etc.)
+
+### Issue 1: Multiprocessing Fork Bomb (CRITICAL)
+
+**Symptom**:
+- Production build spawns infinite processes
+- Console shows dozens of "Starting PrintOrderWeb" messages
+- DDE transaction failures from DLL being overwhelmed
+- System resource exhaustion and crash
+- Machine becomes unresponsive
+
+**Root Cause**:
+The `reverse_geocoder` library uses `scipy` which internally uses Python's `multiprocessing` module. On Windows with PyInstaller-frozen executables:
+1. When multiprocessing spawns a child process, the child re-executes the main script
+2. Without proper guards, each child spawns more children
+3. This creates an infinite fork bomb
+
+**Console Log Pattern** (BAD - infinite spawning):
+```
+2025-12-08 11:36:54 [INFO] Starting PrintOrderWeb in production mode
+2025-12-08 11:36:54 [INFO] DLL context initialized successfully
+2025-12-08 11:36:56 [INFO] Starting PrintOrderWeb in production mode  # <-- DUPLICATE!
+2025-12-08 11:36:56 [INFO] Starting PrintOrderWeb in production mode  # <-- MORE!
+2025-12-08 11:36:57 [INFO] Starting PrintOrderWeb in production mode
+... (exponential growth)
+```
+
+**Solution**:
+1. Call `multiprocessing.freeze_support()` at the VERY TOP of `app.py`, before any other imports:
+```python
+import multiprocessing
+import sys
+
+if sys.platform == 'win32':
+    multiprocessing.freeze_support()
+
+# Now safe to import other modules
+import atexit
+import logging
+...
+```
+
+2. Use single-threaded mode for libraries that spawn workers:
+```python
+# In reverse_geocoder calls, use mode=1 (single-threaded)
+results = rg.search([(lat, lon)], mode=1, verbose=False)
+```
+
+**Files Changed**:
+- `app.py` - Added freeze_support() at module level with documentation
+- `models/inventory.py` - Use mode=1 for reverse_geocoder
+- `print_order_web.spec` - Added documentation note
+
+### Issue 2: Library Initialization Hanging
+
+**Symptom**:
+- App starts but inventory never loads
+- Sidebar stays empty
+- No error messages in log
+- App appears frozen during first API call
+
+**Root Cause**:
+Some libraries (like `reverse_geocoder`) load large data files on first use. In PyInstaller builds:
+1. File paths may be incorrect (looking in wrong location)
+2. First initialization may trigger multiprocessing
+3. Initialization blocks the calling thread indefinitely
+
+**Solution**:
+Implement lazy initialization with error handling:
+```python
+REVERSE_GEOCODER_AVAILABLE = False
+_rg_module = None
+_rg_initialized = False
+
+def _init_reverse_geocoder():
+    global REVERSE_GEOCODER_AVAILABLE, _rg_module, _rg_initialized
+
+    if _rg_initialized:
+        return REVERSE_GEOCODER_AVAILABLE
+
+    _rg_initialized = True
+
+    try:
+        import reverse_geocoder as rg
+        _rg_module = rg
+        # Test with single-threaded mode
+        test_result = rg.search([(0.0, 0.0)], mode=1, verbose=False)
+        if test_result:
+            REVERSE_GEOCODER_AVAILABLE = True
+    except Exception as e:
+        logger.warning(f"Geocoder init failed: {e}")
+
+    return REVERSE_GEOCODER_AVAILABLE
+```
+
+**Key Principles**:
+1. Don't import heavy libraries at module level
+2. Use lazy initialization on first actual use
+3. Always have graceful degradation (app works without the feature)
+4. Test initialization with a simple call before relying on it
+
+### Issue 3: Data File Paths in PyInstaller
+
+**Symptom**:
+- Library works in development but fails in production
+- FileNotFoundError for data files
+- Library can't find its bundled resources
+
+**Root Cause**:
+PyInstaller bundles files into `_internal/` folder. Libraries that use `__file__` to find data files will look in the wrong place.
+
+**Solution in `print_order_web.spec`**:
+```python
+datas=[
+    # Bundle the entire reverse_geocoder package including data files
+    ('.venv/Lib/site-packages/reverse_geocoder', 'reverse_geocoder'),
+]
+```
+
+### Testing Checklist for PyInstaller Builds
+
+Before releasing a production build, verify:
+
+1. **Single Instance**: Only ONE "Starting PrintOrderWeb" message in logs
+2. **Fast Startup**: Application initializes within 2-3 seconds
+3. **Inventory Loads**: Sidebar shows consumable data within 30 seconds
+4. **No Hangs**: All pages respond immediately
+5. **Clean Shutdown**: CTRL+C exits cleanly without orphan processes
+
+**Test Commands**:
+```powershell
+# Build
+.\.venv\Scripts\pyinstaller.exe --clean --noconfirm print_order_web.spec
+
+# Run and capture log
+cd dist\PrintOrderWeb
+.\PrintOrderWeb.exe > consolelog.txt 2>&1
+
+# Check for duplicate startup (should be exactly 1)
+Select-String "Starting PrintOrderWeb" consolelog.txt
+```
+
+### What Works vs What Doesn't
+
+**WORKS in PyInstaller**:
+- Flask and Jinja2 templates
+- ctypes DLL loading (ConsumableClient.dll)
+- Threading (background inventory refresh)
+- JSON parsing
+- File uploads
+- Session management
+
+**REQUIRES SPECIAL HANDLING**:
+- `multiprocessing` - Needs freeze_support()
+- `scipy` - Uses multiprocessing internally
+- `reverse_geocoder` - Uses scipy, needs mode=1
+- Any library loading data files - Need explicit bundling in .spec
+
+**AVOID in Production**:
+- `multiprocessing.Pool` - Use threading instead
+- Libraries that spawn worker processes
+- Dynamic imports based on `__file__` paths
+
+### Debugging PyInstaller Issues
+
+1. **Enable verbose logging**: Set `FLASK_DEBUG=1` temporarily
+2. **Check console output**: Run from command line, not double-click
+3. **Look for patterns**: Multiple startup messages = fork bomb
+4. **Add timing logs**: Identify where hangs occur
+5. **Test incrementally**: Disable features to isolate the problem
+
+### Future Development Guidelines
+
+When adding new dependencies:
+
+1. **Check if it uses multiprocessing**: Look for `from multiprocessing import` in library source
+2. **Test in PyInstaller build**: Don't assume dev testing is sufficient
+3. **Add graceful degradation**: App should work even if feature fails
+4. **Document in CLAUDE.md**: Record any special handling required
+5. **Update .spec file**: Add any data files the library needs

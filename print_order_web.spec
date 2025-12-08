@@ -25,6 +25,11 @@
 #   - FAIL-FAST - DLL is required, no stub mode
 #   - Inventory service runs in background thread
 #   - Job submission uses thread-per-job with complete isolation
+#
+# MULTIPROCESSING NOTE (December 2025):
+#   The reverse_geocoder library uses scipy which internally spawns child processes.
+#   app.py calls multiprocessing.freeze_support() at module level to prevent
+#   infinite process spawning in the frozen executable. This is CRITICAL.
 
 import os
 import shutil
@@ -67,6 +72,8 @@ a = Analysis(
         ('config.py', '.'),
         # Logging configuration module
         ('logging_config.py', '.'),
+        # Reverse geocoder data file (city coordinates database)
+        ('.venv/Lib/site-packages/reverse_geocoder', 'reverse_geocoder'),
     ],
     hiddenimports=[
         # Flask and dependencies
@@ -123,6 +130,12 @@ a = Analysis(
         'modules.printer_config',
         'modules.consumable_details',
         'modules.image_defaults',
+
+        # Reverse geocoder for location data feature
+        'reverse_geocoder',
+        'reverse_geocoder.cKDTree_MP',
+        'scipy.spatial',
+        'scipy.spatial._ckdtree',
     ],
     hookspath=[],
     hooksconfig={},
@@ -130,13 +143,13 @@ a = Analysis(
     excludes=[
         'tkinter',
         'matplotlib',
-        'numpy',
+        # 'numpy' - REQUIRED for reverse_geocoder (location data feature)
         'pandas',
-        'scipy',
+        # 'scipy' - REQUIRED for reverse_geocoder (location data feature)
         'PIL',
         'cv2',
         'pytest',
-        'unittest',
+        # 'unittest' - REQUIRED for reverse_geocoder
     ],
     win_no_prefer_redirects=False,
     win_private_assemblies=False,

@@ -22,14 +22,45 @@ ARCHITECTURE:
 
 NO SHARED STATE between inventory and job submission.
 Each thread creates its own API client for complete isolation.
+
+PYINSTALLER MULTIPROCESSING FIX (December 2025):
+    The reverse_geocoder library (used for location data) internally uses scipy,
+    which spawns child processes via multiprocessing. On Windows, PyInstaller-frozen
+    executables require multiprocessing.freeze_support() to be called BEFORE any
+    other imports, otherwise each spawned child process re-executes the main script,
+    creating an infinite fork bomb that crashes the system.
+
+    Symptom: Multiple "Starting PrintOrderWeb" log entries, DDE transaction failures,
+    system resource exhaustion, and eventual crash.
+
+    Solution: Call freeze_support() at module level before imports, and guard the
+    main execution block with __name__ == "__main__".
 """
 
 from __future__ import annotations
 
+# =============================================================================
+# CRITICAL: MULTIPROCESSING FREEZE SUPPORT FOR PYINSTALLER
+# =============================================================================
+# This MUST be at the very top, before any other imports that might trigger
+# multiprocessing. The reverse_geocoder library uses scipy which spawns
+# child processes. Without this guard, PyInstaller builds will infinitely
+# spawn new processes, causing system crashes.
+#
+# See: https://docs.python.org/3/library/multiprocessing.html#multiprocessing.freeze_support
+# =============================================================================
+import multiprocessing
+import sys
+
+# freeze_support() is a no-op on non-Windows and non-frozen environments,
+# but CRITICAL for PyInstaller on Windows. Must be called before any
+# multiprocessing-using libraries are imported.
+if sys.platform == 'win32':
+    multiprocessing.freeze_support()
+
 import atexit
 import logging
 import os
-import sys
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -358,6 +389,11 @@ def create_app() -> Flask:
 
 
 if __name__ == "__main__":
+    # Note: multiprocessing.freeze_support() is called at module level above.
+    # This is required for PyInstaller builds on Windows when using libraries
+    # that spawn child processes (like reverse_geocoder via scipy).
+
     app = create_app()
     debug_mode = os.environ.get("FLASK_DEBUG", "1") == "1"
+
     app.run(debug=debug_mode)

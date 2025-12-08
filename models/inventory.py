@@ -17,14 +17,56 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Dict, Any, List, Optional
 
-# Reverse geocoder for converting coordinates to location names
-try:
-    import reverse_geocoder as rg
-    REVERSE_GEOCODER_AVAILABLE = True
-except ImportError:
-    REVERSE_GEOCODER_AVAILABLE = False
-
 logger = logging.getLogger(__name__)
+
+# Reverse geocoder for converting coordinates to location names.
+# NOTE: reverse_geocoder uses scipy which may spawn child processes via multiprocessing.
+# For PyInstaller builds on Windows, app.py must call multiprocessing.freeze_support()
+# BEFORE this module is imported to prevent infinite process spawning.
+#
+# PYINSTALLER COMPATIBILITY (December 2025):
+# The reverse_geocoder library loads a large geo database on first use. In PyInstaller
+# builds, this can fail due to path issues or hang during multiprocessing initialization.
+# We wrap initialization carefully and gracefully degrade if it fails.
+REVERSE_GEOCODER_AVAILABLE = False
+_rg_module = None
+_rg_initialized = False
+
+
+def _init_reverse_geocoder():
+    """
+    Lazy initialization of reverse_geocoder.
+
+    Called on first use to avoid blocking app startup.
+    Returns True if successfully initialized, False otherwise.
+    """
+    global REVERSE_GEOCODER_AVAILABLE, _rg_module, _rg_initialized
+
+    if _rg_initialized:
+        return REVERSE_GEOCODER_AVAILABLE
+
+    _rg_initialized = True
+
+    try:
+        import reverse_geocoder as rg
+        _rg_module = rg
+
+        # Test that the geocoder actually works by doing a simple lookup
+        # This forces the library to load its data files
+        # Use mode=1 (single-threaded) to avoid multiprocessing issues in PyInstaller
+        test_result = rg.search([(0.0, 0.0)], mode=1, verbose=False)
+        if test_result:
+            REVERSE_GEOCODER_AVAILABLE = True
+            logger.info("Reverse geocoder initialized successfully")
+        else:
+            logger.warning("Reverse geocoder returned empty results - disabling")
+
+    except ImportError as e:
+        logger.info(f"Reverse geocoder not available (import failed): {e}")
+    except Exception as e:
+        logger.warning(f"Reverse geocoder initialization failed (will run without location names): {e}")
+
+    return REVERSE_GEOCODER_AVAILABLE
 
 
 @dataclass(frozen=True)
@@ -108,14 +150,15 @@ class LocationData:
         accuracy = location_data.get("accuracy", "")
         timestamp = location_data.get("timestamp", "")
 
-        # Attempt reverse geocoding
+        # Attempt reverse geocoding (lazy init on first use)
         city = ""
         region = ""
         country = ""
 
-        if REVERSE_GEOCODER_AVAILABLE and latitude and longitude:
+        if latitude and longitude and _init_reverse_geocoder():
             try:
-                results = rg.search([(latitude, longitude)], verbose=False)
+                # Use mode=1 (single-threaded) to avoid multiprocessing issues in PyInstaller
+                results = _rg_module.search([(latitude, longitude)], mode=1, verbose=False)
                 if results and len(results) > 0:
                     result = results[0]
                     city = result.get("name", "")
