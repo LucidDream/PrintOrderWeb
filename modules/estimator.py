@@ -5,6 +5,8 @@ from __future__ import annotations
 from typing import Dict, Any
 import logging
 
+from config import Config
+
 
 class JobEstimator:
     """Produces rough estimates for job consumables and totals."""
@@ -18,16 +20,31 @@ class JobEstimator:
 
     # Page coverage estimates (percentage of page covered in ink)
     # These are industry-standard estimates for typical documents
+    # NOTE: "text_normal" is overridden by ESTIMATOR_PAGE_COVERAGE_PERCENT from .env
     PAGE_COVERAGE = {
         "text_light": 0.05,      # 5% coverage - light text documents
-        "text_normal": 0.10,     # 10% coverage - normal text documents
+        "text_normal": 0.10,     # 10% coverage - normal text documents (default, configurable)
         "text_heavy": 0.15,      # 15% coverage - text with tables/formatting
         "graphics": 0.25,        # 25% coverage - documents with graphics
         "photos": 0.50,          # 50% coverage - photo-heavy documents
     }
 
     # Base toner consumption: mL per sheet at 100% coverage
+    # NOTE: Overridden by ESTIMATOR_BASE_TONER_ML from .env
     BASE_TONER_ML_PER_SHEET_FULL_COVERAGE = 0.15
+
+    @classmethod
+    def _get_base_toner_ml(cls) -> float:
+        """Get base toner mL from config (allows .env override)."""
+        return Config.ESTIMATOR_BASE_TONER_ML
+
+    @classmethod
+    def _get_page_coverage(cls) -> float:
+        """Get page coverage from config (allows .env override).
+
+        Returns coverage as decimal (e.g., 0.10 for 10%).
+        """
+        return Config.ESTIMATOR_PAGE_COVERAGE_PERCENT / 100.0
 
     def __init__(self, inventory_service) -> None:  # inventory_service kept for parity
         self.inventory_service = inventory_service
@@ -122,15 +139,20 @@ class JobEstimator:
         # Get quality modifier
         quality_modifier = self.QUALITY_MODIFIERS.get(quality, 1.0)
 
-        # Assume text_normal coverage for now (10% page coverage)
-        # This could be enhanced with PDF analysis in the future
-        page_coverage = self.PAGE_COVERAGE["text_normal"]
+        # Get configurable values from .env (allows demo overrides)
+        page_coverage = self._get_page_coverage()
+        base_toner_ml = self._get_base_toner_ml()
+
+        self.logger.debug(
+            f"Estimator config: page_coverage={page_coverage:.2%}, "
+            f"base_toner_ml={base_toner_ml}"
+        )
 
         # Base calculation: sheets × coverage × base_consumption × quality_modifier
         base_usage_per_color = (
             sheets_required
             * page_coverage
-            * self.BASE_TONER_ML_PER_SHEET_FULL_COVERAGE
+            * base_toner_ml
             * quality_modifier
         )
 

@@ -150,7 +150,35 @@ CONSUMABLE_DLL_PATH=../CCAPIv2.0.0.2/ConsumableClient.dll
 FLASK_SECRET_KEY=change-in-production
 FLASK_DEBUG=1                      # 0 for production
 FLASK_ENV=development              # development or production
+
+# Estimator settings (for demos - increase ink consumption)
+ESTIMATOR_BASE_TONER_ML=0.15       # mL per sheet at 100% coverage (default: 0.15)
+ESTIMATOR_PAGE_COVERAGE_PERCENT=10 # Page coverage % (default: 10)
 ```
+
+### Estimator Configuration (Demo Mode)
+
+The toner usage estimator can be configured via environment variables for demonstrations:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `ESTIMATOR_BASE_TONER_ML` | 0.15 | Base toner consumption (mL) per sheet at 100% coverage |
+| `ESTIMATOR_PAGE_COVERAGE_PERCENT` | 10 | Assumed page coverage percentage |
+
+**Formula**: `toner_ml = sheets × (coverage/100) × base_ml × quality_modifier`
+
+**Demo Examples**:
+```bash
+# ~3x more ink than default
+ESTIMATOR_BASE_TONER_ML=0.50
+ESTIMATOR_PAGE_COVERAGE_PERCENT=30
+
+# ~10x more ink than default
+ESTIMATOR_BASE_TONER_ML=0.50
+ESTIMATOR_PAGE_COVERAGE_PERCENT=100
+```
+
+**Note**: Changes require app restart. For production builds, edit `.env` in the `dist/PrintOrderWeb/` folder.
 
 ## Key Classes
 
@@ -846,3 +874,35 @@ if __name__ == "__main__":
 2. Use `Timer` to delay - server needs time to bind to port
 3. Place code AFTER `create_app()` but BEFORE `app.run()`
 4. Wrap in try/except for graceful degradation
+
+### Configurable Estimator Settings (December 2025)
+
+Added environment variable support for toner usage estimation, allowing demo configurations without code changes.
+
+#### New Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `ESTIMATOR_BASE_TONER_ML` | 0.15 | Base toner consumption (mL) per sheet at 100% coverage |
+| `ESTIMATOR_PAGE_COVERAGE_PERCENT` | 10 | Assumed page coverage percentage |
+
+**Formula**: `toner_ml = sheets × (coverage/100) × base_ml × quality_modifier`
+
+#### Files Modified
+- `config.py` - Added `load_dotenv()` at module level, new config variables
+- `modules/estimator.py` - Now reads from `Config` class instead of hardcoded constants
+- `.env`, `.env.example`, `.env.production` - Added estimator settings with documentation
+
+#### Usage
+Edit `.env` to increase ink consumption for demos:
+```bash
+# Default (industry standard)
+ESTIMATOR_BASE_TONER_ML=0.15
+ESTIMATOR_PAGE_COVERAGE_PERCENT=10
+
+# Demo mode (~33x more ink)
+ESTIMATOR_BASE_TONER_ML=0.50
+ESTIMATOR_PAGE_COVERAGE_PERCENT=100
+```
+
+Restart application after changes. No rebuild required.
